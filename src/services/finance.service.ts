@@ -112,7 +112,7 @@ export async function fetchFinanceReport(
   )('get_finance_report', { p_scope: scope, p_event_id: eventId ?? null });
 
   if (!error && data && typeof data === 'object') {
-    const row = data as { scope: string; rows: FinanceReport['rows']; exportReady: boolean };
+    const row = data as unknown as { scope: string; rows: FinanceReport['rows']; exportReady: boolean };
     return {
       scope: scope,
       rows: row.rows ?? [],

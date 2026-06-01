@@ -102,7 +102,7 @@ export async function searchAccessForScan(eventId: string, query: string): Promi
   )('search_access_for_scan', { p_event_id: eventId, p_query: query });
 
   if (!error && data && typeof data === 'object' && 'results' in (data as object)) {
-    const results = (data as { results: ScannerSearchHit[] }).results;
+    const results = (data as unknown as { results: ScannerSearchHit[] }).results;
     return results ?? [];
   }
   return useScannerStore.getState().searchFixture(query);

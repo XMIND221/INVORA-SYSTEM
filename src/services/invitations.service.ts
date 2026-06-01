@@ -8,6 +8,7 @@ export async function createInvitation(input: {
   guestName?: string;
 }): Promise<Invitation> {
   const token = crypto.randomUUID();
+  const uniqueCode = token.replace(/-/g, '').slice(0, 12).toUpperCase();
 
   const { data, error } = await supabase
     .from('invitations')
@@ -16,13 +17,14 @@ export async function createInvitation(input: {
       guest_email: input.guestEmail ?? null,
       guest_name: input.guestName ?? null,
       token,
-      status: 'pending',
+      unique_code: uniqueCode,
+      status: 'created',
     })
     .select()
     .single();
 
   if (error) throw error;
-  return data;
+  return data as Invitation;
 }
 
 export async function getInvitationByToken(token: string): Promise<Invitation | null> {
@@ -33,7 +35,7 @@ export async function getInvitationByToken(token: string): Promise<Invitation | 
     .maybeSingle();
 
   if (error) throw error;
-  return data;
+  return data as Invitation | null;
 }
 
 export function buildInvitationQrPayload(invitation: Invitation): string {
