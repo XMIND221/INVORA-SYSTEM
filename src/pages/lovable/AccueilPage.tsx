@@ -1,12 +1,21 @@
 import { Link } from 'react-router-dom';
 import { ArrowUpRight } from 'lucide-react';
-import { LOVABLE_ROUTES } from '@/lib/constants';
+import {
+  LOVABLE_ROUTES,
+  lovableEventAnalytics,
+  lovableEventHub,
+  lovableFinance,
+  lovableScannerAnalytics,
+  lovableScannerHistory,
+} from '@/lib/constants';
 import { PageHeader } from '@/components/lovable/PageHeader';
 import { Stat } from '@/components/lovable/Stat';
 import { RoleContextBar } from '@/components/lovable/RoleContextBar';
 import { NextActionCard } from '@/components/lovable/NextActionCard';
 import { UniverseCard } from '@/components/lovable/UniverseCard';
+import { OrganizerJourneyStrip } from '@/components/lovable/OrganizerJourneyStrip';
 import { ROLE_INTENT, WALLET_COPY } from '@/integration/lovable/product-copy';
+import { ORGANIZER_MOCK_EVENTS } from '@/integration/lovable/organizer-mock';
 import { useRole } from '@/integration/lovable/use-role';
 
 export default function AccueilPage() {
@@ -19,6 +28,9 @@ export default function AccueilPage() {
 
 function OrganizerHome() {
   const intent = ROLE_INTENT.organisateur;
+  const flagship = ORGANIZER_MOCK_EVENTS[0]!;
+  const totalScans = ORGANIZER_MOCK_EVENTS.reduce((s, e) => s + e.metrics.scans, 0);
+  const totalRevenue = ORGANIZER_MOCK_EVENTS.reduce((s, e) => s + e.metrics.revenueEur, 0);
 
   return (
     <div className="pb-4">
@@ -33,14 +45,16 @@ function OrganizerHome() {
               <span className="font-serif italic">Marc.</span>
             </>
           }
-          description={intent.nextHint}
+          description="Créer · Configurer · Publier · Gérer · Analyser — sans vous perdre."
         />
+
+        <OrganizerJourneyStrip currentStep={flagship.journeyStep} />
 
         <NextActionCard
           title="Distribuer vos invitations"
-          description="Obsidian Gala · univers INVITER · étape 3 sur 5"
-          to={`${LOVABLE_ROUTES.parcours}?univers=inviter`}
-          cta="Voir le parcours"
+          description={`${flagship.title} · ${flagship.universe === 'inviter' ? 'INVITER' : 'VENDRE'} · centre de contrôle`}
+          to={lovableEventHub(flagship.id)}
+          cta="Ouvrir le pilotage"
         />
 
         <p className="eyebrow mb-3">Vos deux univers</p>
@@ -49,16 +63,32 @@ function OrganizerHome() {
 
         <Link
           to={LOVABLE_ROUTES.creer}
-          className="flex items-center justify-center gap-2 w-full py-3 mt-2 mb-6 border border-border rounded-xl text-sm text-muted-foreground hover:text-foreground transition"
+          className="flex items-center justify-center gap-2 w-full py-3 mt-2 mb-4 border border-border rounded-xl text-sm text-muted-foreground hover:text-foreground transition"
         >
           Créer une nouvelle expérience
           <ArrowUpRight className="size-4" />
         </Link>
 
+        <Link
+          to={lovableEventAnalytics(flagship.id)}
+          className="block text-center text-[10px] uppercase tracking-[0.2em] text-muted-foreground mb-2"
+        >
+          Voir les analytics globales
+        </Link>
+        <Link
+          to={lovableFinance()}
+          className="block text-center text-[10px] uppercase tracking-[0.2em] text-muted-foreground mb-6"
+        >
+          Finance · solde & retraits
+        </Link>
+
         <div className="grid grid-cols-3 gap-3 py-4 border-t border-border">
-          <Stat label="Revenus" value="12.4k€" />
-          <Stat label="Vendus" value="482" />
-          <Stat label="Scans" value="92%" />
+          <Stat
+            label="Revenus"
+            value={totalRevenue > 0 ? `${(totalRevenue / 1000).toFixed(1)}k€` : '—'}
+          />
+          <Stat label="Accès" value={String(flagship.metrics.accesses)} />
+          <Stat label="Scans" value={String(totalScans)} />
         </div>
       </div>
     </div>
@@ -119,10 +149,10 @@ function PartnerHome() {
         />
 
         <NextActionCard
-          title="Partager vos liens actifs"
-          description="2 événements · stories et visuels prêts dans Promouvoir"
-          to={LOVABLE_ROUTES.partenaires}
-          cta="Aller à Promouvoir"
+          title="Campagne Showcase 06"
+          description="Media kit · lien traçable · commissions VENDRE"
+          to="/partenaires/campagnes/pc-showcase"
+          cta="Promouvoir"
         />
 
         <div className="grid grid-cols-2 gap-3">
@@ -164,6 +194,15 @@ function ScannerHome() {
           <Stat label="Validés" value="218" />
           <Stat label="Refusés" value="3" />
           <Stat label="Total" value="221" />
+        </div>
+
+        <div className="flex gap-4 justify-center mt-4 text-[10px] uppercase tracking-[0.18em]">
+          <Link to={lovableScannerHistory()} className="text-muted-foreground hover:text-foreground">
+            Historique
+          </Link>
+          <Link to={lovableScannerAnalytics()} className="text-muted-foreground hover:text-foreground">
+            Analytics terrain
+          </Link>
         </div>
       </div>
     </div>

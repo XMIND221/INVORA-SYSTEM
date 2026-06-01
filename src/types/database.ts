@@ -47,10 +47,26 @@ export interface Invitation {
   event_id: string;
   guest_email: string | null;
   guest_name: string | null;
+  guest_first_name?: string | null;
+  guest_last_name?: string | null;
+  guest_phone?: string | null;
+  access_type_code?: string;
+  unique_code?: string;
+  qr_payload?: string | null;
   token: string;
   status: string;
-  sent_at: string | null;
-  accepted_at: string | null;
+  sent_at?: string | null;
+  accepted_at?: string | null;
+  opened_at?: string | null;
+  distributed_at?: string | null;
+  distribution_channels?: string[];
+  claimed?: boolean;
+  claimed_at?: string | null;
+  claimed_by?: string | null;
+  user_id?: string | null;
+  scanned_at?: string | null;
+  cancelled_at?: string | null;
+  expires_at?: string | null;
   created_at: string;
 }
 

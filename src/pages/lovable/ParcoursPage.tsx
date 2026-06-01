@@ -1,21 +1,27 @@
 import { Link, useSearchParams } from 'react-router-dom';
-import { Check, ArrowRight } from 'lucide-react';
-import { LOVABLE_ROUTES } from '@/lib/constants';
+import { Check, ArrowRight, ArrowLeft } from 'lucide-react';
+import {
+  lovableEventHub,
+  lovableEventInviter,
+  lovableEventVendre,
+  LOVABLE_ROUTES,
+} from '@/lib/constants';
 import { PageHeader } from '@/components/lovable/PageHeader';
 import { RoleContextBar } from '@/components/lovable/RoleContextBar';
 import { FlowStrip } from '@/components/lovable/FlowStrip';
+import { OrganizerJourneyStrip } from '@/components/lovable/OrganizerJourneyStrip';
 import {
   INVITER_FLOW,
   UNIVERSE_COPY,
   VENDRE_FLOW,
 } from '@/integration/lovable/product-copy';
+import { getOrganizerEvent } from '@/integration/lovable/organizer-mock';
 import type { EventUniverse } from '@/types/event';
 
 type StepStatus = 'done' | 'now' | 'todo';
 
-function getSteps(universe: EventUniverse) {
+function getSteps(universe: EventUniverse, nowIndex: number) {
   const flow = universe === 'inviter' ? INVITER_FLOW : VENDRE_FLOW;
-  const nowIndex = universe === 'inviter' ? 2 : 1;
   return flow.map((step, i) => ({
     ...step,
     status: (i < nowIndex ? 'done' : i === nowIndex ? 'now' : 'todo') as StepStatus,
@@ -31,17 +37,30 @@ function getSteps(universe: EventUniverse) {
 export default function ParcoursPage() {
   const [params] = useSearchParams();
   const univers = (params.get('univers') === 'vendre' ? 'vendre' : 'inviter') as EventUniverse;
+  const eventId = params.get('event');
+  const event = eventId ? getOrganizerEvent(eventId) : undefined;
   const copy = UNIVERSE_COPY[univers];
-  const steps = getSteps(univers);
+  const nowIndex = event?.universeFlowStep ?? (univers === 'inviter' ? 2 : 1);
+  const steps = getSteps(univers, nowIndex);
   const current = steps.find((s) => s.status === 'now');
   const progress = (steps.filter((s) => s.status === 'done').length / steps.length) * 100;
+  const eventTitle = event?.title ?? 'Obsidian Gala';
+  const hubTo = event ? lovableEventHub(event.id) : LOVABLE_ROUTES.evenements;
 
   return (
     <div className="pb-4">
       <RoleContextBar location={`Parcours ${copy.title}`} />
       <div className="px-6">
+        <Link
+          to={hubTo}
+          className="inline-flex items-center gap-1 text-[10px] uppercase tracking-[0.2em] text-muted-foreground mb-4"
+        >
+          <ArrowLeft className="size-3" />
+          Centre de contrôle
+        </Link>
+
         <PageHeader
-          eyebrow={`Obsidian Gala · ${copy.badge}`}
+          eyebrow={`${eventTitle} · ${copy.badge}`}
           title={
             <>
               Parcours
@@ -52,7 +71,8 @@ export default function ParcoursPage() {
           description={copy.subtitle}
         />
 
-        <FlowStrip universe={univers} currentStep={steps.findIndex((s) => s.status === 'now')} />
+        <OrganizerJourneyStrip currentStep={3} compact />
+        <FlowStrip universe={univers} currentStep={nowIndex} />
 
         <div className="flex items-center justify-between mb-2 mt-4">
           <span className="eyebrow">Avancement</span>
@@ -101,14 +121,21 @@ export default function ParcoursPage() {
           ))}
         </ol>
 
-        {univers === 'inviter' && (
+        {univers === 'inviter' && event ? (
           <Link
-            to={LOVABLE_ROUTES.creer}
+            to={lovableEventInviter(event.id)}
             className="mt-6 inline-flex items-center gap-1 text-[10px] uppercase tracking-[0.2em] text-muted-foreground"
           >
-            Modifier l’expérience <ArrowRight className="size-3" />
+            Ouvrir INVITER Engine <ArrowRight className="size-3" />
           </Link>
-        )}
+        ) : event ? (
+          <Link
+            to={lovableEventVendre(event.id)}
+            className="mt-6 inline-flex items-center gap-1 text-[10px] uppercase tracking-[0.2em] text-muted-foreground"
+          >
+            Ouvrir VENDRE Engine <ArrowRight className="size-3" />
+          </Link>
+        ) : null}
       </div>
     </div>
   );

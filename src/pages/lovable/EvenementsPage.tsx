@@ -1,12 +1,12 @@
+import { Link } from 'react-router-dom';
 import { ArrowUpRight } from 'lucide-react';
+import { lovableEventHub, LOVABLE_ROUTES } from '@/lib/constants';
 import { PageHeader } from '@/components/lovable/PageHeader';
 import { RoleContextBar } from '@/components/lovable/RoleContextBar';
-
-const events = [
-  { t: 'Obsidian Gala', d: '24 DÉC · Paris', s: 'INVITER', n: '482 / 600' },
-  { t: 'Showcase 06', d: '06 DÉC · Pantin', s: 'VENDRE', n: '212 / 300' },
-  { t: 'Brunch Privé', d: '28 NOV · Saint-Germain', s: 'INVITER', n: '40 / 40' },
-];
+import { OrganizerJourneyStrip } from '@/components/lovable/OrganizerJourneyStrip';
+import { EventStatusBadge } from '@/components/lovable/EventStatusBadge';
+import { ORGANIZER_MOCK_EVENTS } from '@/integration/lovable/organizer-mock';
+import { UNIVERSE_COPY } from '@/integration/lovable/product-copy';
 
 export default function EvenementsPage() {
   return (
@@ -22,35 +22,58 @@ export default function EvenementsPage() {
               <span className="font-serif italic">expériences.</span>
             </>
           }
-          description="Chaque ligne = un univers INVITER ou VENDRE."
+          description="Statuts unifiés · accès direct au centre de contrôle."
         />
 
+        <OrganizerJourneyStrip currentStep={3} compact />
+
         <div className="space-y-3">
-          {events.map((e) => (
-            <article
-              key={e.t}
-              className="flex items-center gap-4 p-4 bg-surface border border-border rounded-2xl"
-            >
-              <div
-                className="size-14 shrink-0 rounded-xl"
-                style={{ background: 'linear-gradient(135deg, oklch(0.18 0 0), oklch(0.1 0 0))' }}
-              />
-              <div className="flex-1 min-w-0">
-                <h3 className="text-base font-medium truncate">{e.t}</h3>
-                <p className="font-mono text-[10px] tracking-widest text-muted-foreground mt-1 uppercase">
-                  {e.d}
-                </p>
-                <div className="flex items-center gap-2 mt-2">
-                  <span className="text-[9px] uppercase tracking-[0.2em] px-2 py-0.5 border border-border rounded-full">
-                    {e.s}
-                  </span>
-                  <span className="font-mono text-[10px] text-muted-foreground">{e.n}</span>
+          {ORGANIZER_MOCK_EVENTS.map((e) => {
+            const copy = UNIVERSE_COPY[e.universe];
+            const cap =
+              e.universe === 'inviter'
+                ? `${e.metrics.accesses} / ${e.metrics.accessesMax}`
+                : `${e.metrics.tickets} / ${e.metrics.ticketsMax}`;
+
+            return (
+              <Link
+                key={e.id}
+                to={lovableEventHub(e.id)}
+                className="flex items-center gap-4 p-4 bg-surface border border-border rounded-2xl hover:border-border-strong transition"
+              >
+                <div
+                  className="size-14 shrink-0 rounded-xl"
+                  style={{
+                    background: 'linear-gradient(135deg, oklch(0.18 0 0), oklch(0.1 0 0))',
+                  }}
+                />
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <h3 className="text-base font-medium truncate">{e.title}</h3>
+                    <EventStatusBadge status={e.status} />
+                  </div>
+                  <p className="font-mono text-[10px] tracking-widest text-muted-foreground mt-1 uppercase">
+                    {e.dateLabel} · {e.location}
+                  </p>
+                  <div className="flex items-center gap-2 mt-2">
+                    <span className="text-[9px] uppercase tracking-[0.2em] px-2 py-0.5 border border-border rounded-full">
+                      {copy.title}
+                    </span>
+                    <span className="font-mono text-[10px] text-muted-foreground">{cap}</span>
+                  </div>
                 </div>
-              </div>
-              <ArrowUpRight className="size-4 text-muted-foreground shrink-0" />
-            </article>
-          ))}
+                <ArrowUpRight className="size-4 text-muted-foreground shrink-0" />
+              </Link>
+            );
+          })}
         </div>
+
+        <Link
+          to={LOVABLE_ROUTES.creer}
+          className="mt-6 block text-center py-3 border border-dashed border-border-strong rounded-xl text-sm text-muted-foreground"
+        >
+          + Créer une expérience
+        </Link>
       </div>
     </div>
   );

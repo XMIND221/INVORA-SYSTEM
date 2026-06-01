@@ -1,104 +1,188 @@
-import { useEffect, useState } from 'react';
-import { Check, X, Zap, ZapOff, RotateCcw, Pause, Play } from 'lucide-react';
-import { Stat } from '@/components/lovable/Stat';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { Link } from 'react-router-dom';
+import { Check, Pause, Play, RotateCcw, Search, X, Zap, ZapOff } from 'lucide-react';
 import { RoleContextBar } from '@/components/lovable/RoleContextBar';
-import { SCANNER_COPY } from '@/integration/lovable/product-copy';
+import { ScannerGatePicker } from '@/components/lovable/ScannerGatePicker';
+import { ScannerLivePanel } from '@/components/lovable/ScannerLivePanel';
+import { ScannerResultOverlay } from '@/components/lovable/ScannerResultOverlay';
+import { Stat } from '@/components/lovable/Stat';
+import { gateLabel } from '@/features/engines/scanner.engine';
+import { SCANNER_ENGINE_COPY } from '@/integration/lovable/product-copy';
+import {
+  lovableScannerAnalytics,
+  lovableScannerHistory,
+  lovableScannerSearch,
+} from '@/lib/constants';
+import { pendingOfflineCount } from '@/lib/scanner-offline-queue';
+import { scannerService } from '@/services/scanner.service';
+import type { ScannerGateCode, ScannerValidationDisplay } from '@/types/scanner';
 
-type ResultState =
-  | { state: 'idle' }
-  | { state: 'ok'; name: string; pass: string }
-  | { state: 'deny'; reason: string };
+const DEMO_PASSES = [
+  'INV-OBSIDI-4827',
+  'tok-aminata-obsidian',
+  'FAKE-QR-INVALID',
+] as const;
 
 export default function ScannerPage() {
-  const [running, setRunning] = useState(true);
+  const session = scannerService.getSession();
+  const [gate, setGate] = useState<ScannerGateCode>(session.gateCode);
+  const [paused, setPaused] = useState(false);
   const [torch, setTorch] = useState(false);
-  const [result, setResult] = useState<ResultState>({ state: 'idle' });
-  const [history, setHistory] = useState([
-    { id: 1, name: 'Léa Martin', ok: true, ago: '4s' },
-    { id: 2, name: 'Karim B.', ok: true, ago: '18s' },
-    { id: 3, name: 'Inconnu', ok: false, reason: 'Pass invalide', ago: '42s' },
-  ]);
+  const [result, setResult] = useState<ScannerValidationDisplay | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [demoIdx, setDemoIdx] = useState(0);
+  const [offlineCount, setOfflineCount] = useState(pendingOfflineCount());
+  const resetTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const live = scannerService.liveStats();
+
+  const runScan = useCallback(
+    async (passReference: string) => {
+      if (busy) return;
+      setBusy(true);
+      scannerService.setGate(gate);
+      try {
+        const display = await scannerService.validateScan({
+          eventId: session.eventId,
+          passReference,
+          gateCode: gate,
+          deviceId: 'web-scanner-demo',
+          offline: !navigator.onLine,
+        });
+        setResult(display);
+        setOfflineCount(pendingOfflineCount());
+        if (resetTimer.current) clearTimeout(resetTimer.current);
+        resetTimer.current = setTimeout(() => setResult(null), 1600);
+      } finally {
+        setBusy(false);
+      }
+    },
+    [busy, gate, session.eventId],
+  );
 
   useEffect(() => {
-    if (!running) return;
+    if (paused || busy || result) return;
     const t = setTimeout(() => {
-      const ok = Math.random() > 0.25;
-      if (ok) {
-        setResult({ state: 'ok', name: 'Sofia D.', pass: '#4828' });
-        setHistory((h) => [{ id: Date.now(), name: 'Sofia D.', ok: true, ago: '1s' }, ...h].slice(0, 6));
-      } else {
-        setResult({ state: 'deny', reason: 'Pass déjà utilisé' });
-        setHistory((h) => [
-          { id: Date.now(), name: 'Inconnu', ok: false, reason: 'Doublon', ago: '1s' },
-          ...h,
-        ].slice(0, 6));
-      }
-      setTimeout(() => setResult({ state: 'idle' }), 1800);
-    }, 3200);
+      void runScan(DEMO_PASSES[demoIdx % DEMO_PASSES.length]!);
+      setDemoIdx((i) => i + 1);
+    }, 2800);
     return () => clearTimeout(t);
-  }, [running, history.length]);
+  }, [paused, busy, result, demoIdx, runScan]);
+
+  useEffect(() => {
+    return () => {
+      if (resetTimer.current) clearTimeout(resetTimer.current);
+    };
+  }, []);
 
   const flash =
-    result.state === 'ok'
-      ? 'shadow-[0_0_0_3px_color-mix(in_oklab,var(--color-success)_70%,transparent)]'
-      : result.state === 'deny'
-        ? 'shadow-[0_0_0_3px_color-mix(in_oklab,var(--color-destructive)_70%,transparent)]'
+    result?.status === 'validated'
+      ? 'shadow-[0_0_0_4px_color-mix(in_oklab,var(--color-success)_65%,transparent)]'
+      : result?.status === 'denied'
+        ? 'shadow-[0_0_0_4px_color-mix(in_oklab,var(--color-destructive)_65%,transparent)]'
         : '';
 
   return (
-    <div className="pb-4">
-      <RoleContextBar location="Scanner" />
+    <div className="pb-4 min-h-[100dvh] bg-background">
+      <RoleContextBar location="Scanner Pro" />
       <div className="px-6 pt-2 pb-6">
-      <p className="text-xs text-muted-foreground mb-4">{SCANNER_COPY.scan}</p>
-      <div className="flex items-center justify-between mb-5">
-        <div className="flex items-center gap-2">
-          <span
-            className={`size-2 rounded-full ${running ? 'bg-[color:var(--color-success)] animate-pulse' : 'bg-muted-foreground'}`}
-          />
-          <span className="font-mono text-[10px] tracking-[0.25em] uppercase text-muted-foreground">
-            {running ? 'Live · Porte A' : 'En pause'}
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-2">
+            <span
+              className={`size-2 rounded-full ${paused ? 'bg-muted-foreground' : 'bg-[color:var(--color-success)] animate-pulse'}`}
+            />
+            <span className="font-mono text-[10px] tracking-[0.25em] uppercase text-muted-foreground">
+              {paused ? 'Pause' : 'Live'} · {gateLabel(gate)}
+            </span>
+          </div>
+          <span className="font-mono text-[10px] text-muted-foreground truncate max-w-[40%]">
+            {session.eventTitle}
           </span>
         </div>
-        <span className="font-mono text-[10px] text-muted-foreground">Obsidian Gala</span>
-      </div>
 
-      <div
-        className={`relative aspect-[3/4] rounded-3xl overflow-hidden bg-black border border-border-strong mb-4 transition-shadow ${flash}`}
-      >
-        <div className="absolute inset-0 bg-gradient-to-br from-surface-2 via-black to-background" />
-        {result.state !== 'idle' && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center backdrop-blur-sm">
-            <p className="text-white font-serif italic text-3xl">
-              {result.state === 'ok' ? 'Validé' : 'Refusé'}
+        <ScannerGatePicker value={gate} onChange={setGate} />
+
+        <div
+          className={`relative aspect-[3/4] rounded-3xl overflow-hidden bg-black border border-border-strong mt-4 mb-3 transition-shadow duration-200 ${flash}`}
+        >
+          <div className="absolute inset-0 bg-gradient-to-br from-surface-2 via-black to-background" />
+          <div
+            className="absolute left-[12%] right-[12%] h-0.5 bg-primary/80 pointer-events-none"
+            style={{ animation: paused ? 'none' : 'scan 2.4s ease-in-out infinite' }}
+          />
+          <ScannerResultOverlay display={result} />
+          {!result && !paused && (
+            <p className="absolute bottom-4 inset-x-0 text-center text-[10px] uppercase tracking-[0.2em] text-white/40">
+              {SCANNER_ENGINE_COPY.scanHint}
             </p>
-          </div>
+          )}
+        </div>
+
+        <div className="grid grid-cols-4 gap-2 mb-4">
+          <CtrlBtn icon={torch ? <Zap className="size-4" /> : <ZapOff className="size-4" />} label="Torche" onClick={() => setTorch((t) => !t)} />
+          <CtrlBtn
+            icon={paused ? <Play className="size-4" /> : <Pause className="size-4" />}
+            label={paused ? 'Reprendre' : 'Pause'}
+            onClick={() => {
+              setPaused((p) => {
+                scannerService.setPaused(!p);
+                return !p;
+              });
+            }}
+            primary
+          />
+          <CtrlBtn icon={<RotateCcw className="size-4" />} label="Reset" onClick={() => setResult(null)} />
+          <Link
+            to={lovableScannerSearch()}
+            className="flex flex-col items-center justify-center gap-1.5 py-3 rounded-xl border bg-surface border-border"
+          >
+            <Search className="size-4" />
+            <span className="text-[9px] uppercase tracking-[0.18em]">Manuel</span>
+          </Link>
+        </div>
+
+        {offlineCount > 0 && (
+          <button
+            type="button"
+            className="w-full mb-4 py-2 text-xs border border-border rounded-xl text-muted-foreground hover:text-foreground"
+            onClick={() => void scannerService.syncOffline().then(() => setOfflineCount(pendingOfflineCount()))}
+          >
+            {SCANNER_ENGINE_COPY.offlineSync} ({offlineCount})
+          </button>
         )}
-      </div>
 
-      <div className="grid grid-cols-3 gap-2 mb-6">
-        <CtrlBtn onClick={() => setTorch((t) => !t)} icon={torch ? <Zap className="size-4" /> : <ZapOff className="size-4" />} label="Torche" />
-        <CtrlBtn onClick={() => setRunning((r) => !r)} icon={running ? <Pause className="size-4" /> : <Play className="size-4" />} label={running ? 'Pause' : 'Reprendre'} primary />
-        <CtrlBtn onClick={() => setResult({ state: 'idle' })} icon={<RotateCcw className="size-4" />} label="Reset" />
-      </div>
+        <div className="grid grid-cols-3 gap-3 py-4 border-y border-border mb-4">
+          <Stat label="Validés" value={String(live.entered)} trend={`${live.presenceRate}%`} />
+          <Stat label="Refusés" value={String(live.denied)} />
+          <Stat label="Cadence" value="<2s" />
+        </div>
 
-      <div className="grid grid-cols-3 gap-4 py-5 border-y border-border mb-5">
-        <Stat label="Validés" value="218" trend="98.6%" />
-        <Stat label="Refusés" value="3" />
-        <Stat label="Cadence" value="42/min" />
-      </div>
+        <ScannerLivePanel
+          stats={live}
+          historyLink={lovableScannerHistory()}
+          analyticsLink={lovableScannerAnalytics()}
+        />
 
-      <p className="eyebrow mb-3">{SCANNER_COPY.history}</p>
-      <ul className="space-y-2">
-        {history.map((r) => (
-          <li key={r.id} className="flex items-center gap-3 p-3 bg-surface border border-border rounded-xl">
-            {r.ok ? <Check className="size-3.5 text-[color:var(--color-success)]" /> : <X className="size-3.5 text-destructive" />}
-            <p className="text-sm font-medium flex-1">{r.name}</p>
-            <span className="font-mono text-[10px] text-muted-foreground">il y a {r.ago}</span>
-          </li>
-        ))}
-      </ul>
+        <p className="eyebrow mt-6 mb-3">{SCANNER_ENGINE_COPY.recent}</p>
+        <ul className="space-y-2">
+          {scannerService.listHistory().slice(0, 5).map((r) => (
+            <li key={r.id} className="flex items-center gap-3 p-3 bg-surface border border-border rounded-xl">
+              {r.status === 'validated' ? (
+                <Check className="size-3.5 text-[color:var(--color-success)]" />
+              ) : (
+                <X className="size-3.5 text-destructive" />
+              )}
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium truncate">{r.guestName}</p>
+                <p className="text-[10px] text-muted-foreground">{gateLabel(r.gateCode)}</p>
+              </div>
+              <span className="font-mono text-[10px] text-muted-foreground shrink-0">
+                {new Date(r.at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
+              </span>
+            </li>
+          ))}
+        </ul>
+      </div>
       <style>{`@keyframes scan{0%,100%{top:18%}50%{top:82%}}`}</style>
-      </div>
     </div>
   );
 }

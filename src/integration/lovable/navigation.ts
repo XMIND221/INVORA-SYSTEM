@@ -49,6 +49,7 @@ export const ALLOWED_PATHS: Record<LovableRole, string[]> = {
     LOVABLE_ROUTES.accueil,
     LOVABLE_ROUTES.evenements,
     LOVABLE_ROUTES.creer,
+    LOVABLE_ROUTES.finance,
     LOVABLE_ROUTES.parcours,
     LOVABLE_ROUTES.partenaires,
     LOVABLE_ROUTES.parametres,
@@ -62,6 +63,32 @@ export const ALLOWED_PATHS: Record<LovableRole, string[]> = {
   scanner: [LOVABLE_ROUTES.accueil, LOVABLE_ROUTES.scanner, LOVABLE_ROUTES.parametres],
 };
 
+const SCANNER_PREFIX = LOVABLE_ROUTES.scanner;
+const ACCES_PREFIX = LOVABLE_ROUTES.acces;
+
 export function isPathAllowed(role: LovableRole, pathname: string): boolean {
+  if (role === 'organisateur' && pathname.startsWith(`${LOVABLE_ROUTES.evenements}/`)) {
+    return true;
+  }
+  if (role === 'organisateur' && pathname.startsWith(`${LOVABLE_ROUTES.finance}/`)) {
+    return true;
+  }
+  if (
+    pathname.startsWith('/invite/') ||
+    pathname.startsWith('/billetterie/') ||
+    pathname.startsWith('/ticket/') ||
+    pathname.startsWith('/p/')
+  ) {
+    return true;
+  }
+  if (role === 'partenaire' && pathname.startsWith(`${LOVABLE_ROUTES.partenaires}/`)) {
+    return true;
+  }
+  if (role === 'scanner' && pathname.startsWith(`${SCANNER_PREFIX}/`)) {
+    return true;
+  }
+  if (role === 'participant' && pathname.startsWith(`${ACCES_PREFIX}/`)) {
+    return true;
+  }
   return ALLOWED_PATHS[role].some((p) => pathname === p || pathname.startsWith(`${p}?`));
 }

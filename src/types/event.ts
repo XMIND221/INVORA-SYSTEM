@@ -12,6 +12,10 @@ export interface ExperienceDraft {
   startsAt?: string;
   endsAt?: string;
   location?: string;
+  /** Libellé date affiché (studio UX — ISO dans startsAt quand branché Supabase) */
+  dateLabel?: string;
+  coverUrl?: string;
+  capacity?: number;
   settings?: Record<string, unknown>;
 }
 
