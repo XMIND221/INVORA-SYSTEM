@@ -16,7 +16,9 @@
     "supabase:login": "supabase login",
     "supabase:link": "supabase link --project-ref njucvyxucacgiztaczkn",
     "supabase:db:push": "supabase db push",
-    "supabase:functions:deploy": "supabase functions deploy validate-scan && supabase functions deploy audit-log",
+    "supabase:functions:deploy": "supabase functions deploy validate-scan && supabase functions deploy audit-log && supabase functions deploy calculate-pricing && supabase functions deploy process-ticket-purchase && supabase functions deploy calculate-partner-commission && supabase functions deploy scanner-validate-access && supabase functions deploy calculate-finance-quote",
+    "supabase:deploy": "npm run supabase:db:push && npm run supabase:functions:deploy && npm run supabase:types",
+    "deploy:backend": "npm run supabase:deploy",
     "supabase:types": "supabase gen types typescript --linked > src/types/database.generated.ts",
     "supabase:types:remote": "supabase gen types typescript --project-id njucvyxucacgiztaczkn > src/types/database.generated.ts"
   },

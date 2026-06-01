@@ -39,6 +39,89 @@ export type Database = {
   }
   public: {
     Tables: {
+      access_audit_log: {
+        Row: {
+          access_id: string | null
+          action: string
+          created_at: string
+          event_id: string
+          id: string
+          metadata: Json | null
+          user_id: string | null
+        }
+        Insert: {
+          access_id?: string | null
+          action: string
+          created_at?: string
+          event_id: string
+          id?: string
+          metadata?: Json | null
+          user_id?: string | null
+        }
+        Update: {
+          access_id?: string | null
+          action?: string
+          created_at?: string
+          event_id?: string
+          id?: string
+          metadata?: Json | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "access_audit_log_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "access_audit_log_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      access_types: {
+        Row: {
+          code: string
+          created_at: string
+          description: string | null
+          event_id: string
+          id: string
+          label: string
+          max_guests: number | null
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          description?: string | null
+          event_id: string
+          id?: string
+          label: string
+          max_guests?: number | null
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          description?: string | null
+          event_id?: string
+          id?: string
+          label?: string
+          max_guests?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "access_types_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       analytics_events: {
         Row: {
           created_at: string
@@ -195,8 +278,18 @@ export type Database = {
       }
       event_metrics: {
         Row: {
+          cart_adds: number
+          conversion_rate: number
           event_id: string
+          invitations_claimed: number
+          invitations_created: number
+          invitations_opened: number
           invitations_sent: number
+          invitations_used: number
+          invora_commission_fcfa: number
+          organizer_revenue_fcfa: number
+          page_views: number
+          purchases_count: number
           revenue_cents: number
           scans_total: number
           tickets_sold: number
@@ -204,8 +297,18 @@ export type Database = {
           views: number
         }
         Insert: {
+          cart_adds?: number
+          conversion_rate?: number
           event_id: string
+          invitations_claimed?: number
+          invitations_created?: number
+          invitations_opened?: number
           invitations_sent?: number
+          invitations_used?: number
+          invora_commission_fcfa?: number
+          organizer_revenue_fcfa?: number
+          page_views?: number
+          purchases_count?: number
           revenue_cents?: number
           scans_total?: number
           tickets_sold?: number
@@ -213,8 +316,18 @@ export type Database = {
           views?: number
         }
         Update: {
+          cart_adds?: number
+          conversion_rate?: number
           event_id?: string
+          invitations_claimed?: number
+          invitations_created?: number
+          invitations_opened?: number
           invitations_sent?: number
+          invitations_used?: number
+          invora_commission_fcfa?: number
+          organizer_revenue_fcfa?: number
+          page_views?: number
+          purchases_count?: number
           revenue_cents?: number
           scans_total?: number
           tickets_sold?: number
@@ -310,6 +423,9 @@ export type Database = {
           cover_url: string | null
           created_at: string
           description: string | null
+          design_fingerprint: string | null
+          design_generated_at: string | null
+          design_identity: Json | null
           ends_at: string | null
           id: string
           location: string | null
@@ -318,6 +434,9 @@ export type Database = {
           slug: string
           starts_at: string | null
           status: Database["public"]["Enums"]["event_status"]
+          ticketing_status:
+            | Database["public"]["Enums"]["ticketing_status"]
+            | null
           title: string
           universe: Database["public"]["Enums"]["event_universe"]
           updated_at: string
@@ -327,6 +446,9 @@ export type Database = {
           cover_url?: string | null
           created_at?: string
           description?: string | null
+          design_fingerprint?: string | null
+          design_generated_at?: string | null
+          design_identity?: Json | null
           ends_at?: string | null
           id?: string
           location?: string | null
@@ -335,6 +457,9 @@ export type Database = {
           slug: string
           starts_at?: string | null
           status?: Database["public"]["Enums"]["event_status"]
+          ticketing_status?:
+            | Database["public"]["Enums"]["ticketing_status"]
+            | null
           title: string
           universe: Database["public"]["Enums"]["event_universe"]
           updated_at?: string
@@ -344,6 +469,9 @@ export type Database = {
           cover_url?: string | null
           created_at?: string
           description?: string | null
+          design_fingerprint?: string | null
+          design_generated_at?: string | null
+          design_identity?: Json | null
           ends_at?: string | null
           id?: string
           location?: string | null
@@ -352,6 +480,9 @@ export type Database = {
           slug?: string
           starts_at?: string | null
           status?: Database["public"]["Enums"]["event_status"]
+          ticketing_status?:
+            | Database["public"]["Enums"]["ticketing_status"]
+            | null
           title?: string
           universe?: Database["public"]["Enums"]["event_universe"]
           updated_at?: string
@@ -367,46 +498,236 @@ export type Database = {
           },
         ]
       }
+      finance_audit_log: {
+        Row: {
+          action: string
+          amount_fcfa: number | null
+          created_at: string
+          entity_id: string | null
+          entity_type: string
+          id: string
+          metadata: Json | null
+        }
+        Insert: {
+          action: string
+          amount_fcfa?: number | null
+          created_at?: string
+          entity_id?: string | null
+          entity_type: string
+          id?: string
+          metadata?: Json | null
+        }
+        Update: {
+          action?: string
+          amount_fcfa?: number | null
+          created_at?: string
+          entity_id?: string | null
+          entity_type?: string
+          id?: string
+          metadata?: Json | null
+        }
+        Relationships: []
+      }
+      finance_settlements: {
+        Row: {
+          created_at: string
+          event_id: string
+          frozen_at: string
+          gross_fcfa: number
+          id: string
+          invora_commission_fcfa: number
+          organizer_net_fcfa: number
+          partner_commission_fcfa: number
+          payment_status: Database["public"]["Enums"]["payment_status"]
+          reference_code: string | null
+          transaction_id: string
+          universe: Database["public"]["Enums"]["finance_universe"]
+        }
+        Insert: {
+          created_at?: string
+          event_id: string
+          frozen_at?: string
+          gross_fcfa: number
+          id?: string
+          invora_commission_fcfa: number
+          organizer_net_fcfa: number
+          partner_commission_fcfa?: number
+          payment_status: Database["public"]["Enums"]["payment_status"]
+          reference_code?: string | null
+          transaction_id: string
+          universe: Database["public"]["Enums"]["finance_universe"]
+        }
+        Update: {
+          created_at?: string
+          event_id?: string
+          frozen_at?: string
+          gross_fcfa?: number
+          id?: string
+          invora_commission_fcfa?: number
+          organizer_net_fcfa?: number
+          partner_commission_fcfa?: number
+          payment_status?: Database["public"]["Enums"]["payment_status"]
+          reference_code?: string | null
+          transaction_id?: string
+          universe?: Database["public"]["Enums"]["finance_universe"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "finance_settlements_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "finance_settlements_transaction_id_fkey"
+            columns: ["transaction_id"]
+            isOneToOne: true
+            referencedRelation: "transactions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      invitation_distributions: {
+        Row: {
+          channel: Database["public"]["Enums"]["distribution_channel"]
+          id: string
+          invitation_id: string
+          metadata: Json | null
+          sent_at: string
+        }
+        Insert: {
+          channel: Database["public"]["Enums"]["distribution_channel"]
+          id?: string
+          invitation_id: string
+          metadata?: Json | null
+          sent_at?: string
+        }
+        Update: {
+          channel?: Database["public"]["Enums"]["distribution_channel"]
+          id?: string
+          invitation_id?: string
+          metadata?: Json | null
+          sent_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invitation_distributions_invitation_id_fkey"
+            columns: ["invitation_id"]
+            isOneToOne: false
+            referencedRelation: "invitations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       invitations: {
         Row: {
           accepted_at: string | null
+          access_type_code: string
+          cancelled_at: string | null
+          claimed: boolean
+          claimed_at: string | null
+          claimed_by: string | null
           created_at: string
+          distributed_at: string | null
+          distribution_channels:
+            | Database["public"]["Enums"]["distribution_channel"][]
+            | null
           event_id: string
+          expires_at: string | null
           guest_email: string | null
+          guest_first_name: string | null
+          guest_last_name: string | null
           guest_name: string | null
+          guest_phone: string | null
           id: string
+          opened_at: string | null
+          qr_payload: string | null
+          scanned_at: string | null
           sent_at: string | null
-          status: string
+          status: Database["public"]["Enums"]["invitation_status"]
           token: string
+          unique_code: string
+          user_id: string | null
         }
         Insert: {
           accepted_at?: string | null
+          access_type_code?: string
+          cancelled_at?: string | null
+          claimed?: boolean
+          claimed_at?: string | null
+          claimed_by?: string | null
           created_at?: string
+          distributed_at?: string | null
+          distribution_channels?:
+            | Database["public"]["Enums"]["distribution_channel"][]
+            | null
           event_id: string
+          expires_at?: string | null
           guest_email?: string | null
+          guest_first_name?: string | null
+          guest_last_name?: string | null
           guest_name?: string | null
+          guest_phone?: string | null
           id?: string
+          opened_at?: string | null
+          qr_payload?: string | null
+          scanned_at?: string | null
           sent_at?: string | null
-          status?: string
+          status?: Database["public"]["Enums"]["invitation_status"]
           token?: string
+          unique_code: string
+          user_id?: string | null
         }
         Update: {
           accepted_at?: string | null
+          access_type_code?: string
+          cancelled_at?: string | null
+          claimed?: boolean
+          claimed_at?: string | null
+          claimed_by?: string | null
           created_at?: string
+          distributed_at?: string | null
+          distribution_channels?:
+            | Database["public"]["Enums"]["distribution_channel"][]
+            | null
           event_id?: string
+          expires_at?: string | null
           guest_email?: string | null
+          guest_first_name?: string | null
+          guest_last_name?: string | null
           guest_name?: string | null
+          guest_phone?: string | null
           id?: string
+          opened_at?: string | null
+          qr_payload?: string | null
+          scanned_at?: string | null
           sent_at?: string | null
-          status?: string
+          status?: Database["public"]["Enums"]["invitation_status"]
           token?: string
+          unique_code?: string
+          user_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "invitations_claimed_by_fkey"
+            columns: ["claimed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "invitations_event_id_fkey"
             columns: ["event_id"]
             isOneToOne: false
             referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invitations_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -487,6 +808,290 @@ export type Database = {
           },
         ]
       }
+      organizer_balances: {
+        Row: {
+          available_fcfa: number
+          organizer_id: string
+          pending_fcfa: number
+          updated_at: string
+          withdrawn_fcfa: number
+        }
+        Insert: {
+          available_fcfa?: number
+          organizer_id: string
+          pending_fcfa?: number
+          updated_at?: string
+          withdrawn_fcfa?: number
+        }
+        Update: {
+          available_fcfa?: number
+          organizer_id?: string
+          pending_fcfa?: number
+          updated_at?: string
+          withdrawn_fcfa?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "organizer_balances_organizer_id_fkey"
+            columns: ["organizer_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      organizer_payout_requests: {
+        Row: {
+          amount_fcfa: number
+          id: string
+          metadata: Json | null
+          organizer_id: string
+          processed_at: string | null
+          requested_at: string
+          status: Database["public"]["Enums"]["payout_request_status"]
+        }
+        Insert: {
+          amount_fcfa: number
+          id?: string
+          metadata?: Json | null
+          organizer_id: string
+          processed_at?: string | null
+          requested_at?: string
+          status?: Database["public"]["Enums"]["payout_request_status"]
+        }
+        Update: {
+          amount_fcfa?: number
+          id?: string
+          metadata?: Json | null
+          organizer_id?: string
+          processed_at?: string | null
+          requested_at?: string
+          status?: Database["public"]["Enums"]["payout_request_status"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "organizer_payout_requests_organizer_id_fkey"
+            columns: ["organizer_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      partner_campaigns: {
+        Row: {
+          campaign_code: string
+          created_at: string
+          event_id: string
+          id: string
+          is_active: boolean
+          partner_id: string
+          share_path: string
+          universe: Database["public"]["Enums"]["partner_universe"]
+        }
+        Insert: {
+          campaign_code: string
+          created_at?: string
+          event_id: string
+          id?: string
+          is_active?: boolean
+          partner_id: string
+          share_path: string
+          universe: Database["public"]["Enums"]["partner_universe"]
+        }
+        Update: {
+          campaign_code?: string
+          created_at?: string
+          event_id?: string
+          id?: string
+          is_active?: boolean
+          partner_id?: string
+          share_path?: string
+          universe?: Database["public"]["Enums"]["partner_universe"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "partner_campaigns_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "partner_campaigns_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "partners"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      partner_commission_ledger: {
+        Row: {
+          campaign_id: string | null
+          commission_fcfa: number
+          created_at: string
+          frozen_at: string
+          id: string
+          partner_id: string
+          reference_id: string | null
+          reference_type: string
+          transaction_id: string | null
+          universe: Database["public"]["Enums"]["partner_universe"]
+        }
+        Insert: {
+          campaign_id?: string | null
+          commission_fcfa: number
+          created_at?: string
+          frozen_at?: string
+          id?: string
+          partner_id: string
+          reference_id?: string | null
+          reference_type: string
+          transaction_id?: string | null
+          universe: Database["public"]["Enums"]["partner_universe"]
+        }
+        Update: {
+          campaign_id?: string | null
+          commission_fcfa?: number
+          created_at?: string
+          frozen_at?: string
+          id?: string
+          partner_id?: string
+          reference_id?: string | null
+          reference_type?: string
+          transaction_id?: string | null
+          universe?: Database["public"]["Enums"]["partner_universe"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "partner_commission_ledger_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "partner_campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "partner_commission_ledger_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "partners"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "partner_commission_ledger_transaction_id_fkey"
+            columns: ["transaction_id"]
+            isOneToOne: false
+            referencedRelation: "transactions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      partner_media_kits: {
+        Row: {
+          asset_key: string
+          created_at: string
+          event_id: string
+          id: string
+          label: string
+          payload: Json | null
+        }
+        Insert: {
+          asset_key: string
+          created_at?: string
+          event_id: string
+          id?: string
+          label: string
+          payload?: Json | null
+        }
+        Update: {
+          asset_key?: string
+          created_at?: string
+          event_id?: string
+          id?: string
+          label?: string
+          payload?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "partner_media_kits_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      partner_tracking_events: {
+        Row: {
+          campaign_id: string
+          created_at: string
+          id: string
+          kind: Database["public"]["Enums"]["partner_tracking_kind"]
+          metadata: Json | null
+        }
+        Insert: {
+          campaign_id: string
+          created_at?: string
+          id?: string
+          kind: Database["public"]["Enums"]["partner_tracking_kind"]
+          metadata?: Json | null
+        }
+        Update: {
+          campaign_id?: string
+          created_at?: string
+          id?: string
+          kind?: Database["public"]["Enums"]["partner_tracking_kind"]
+          metadata?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "partner_tracking_events_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "partner_campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      partner_withdrawal_requests: {
+        Row: {
+          amount_fcfa: number
+          id: string
+          metadata: Json | null
+          partner_id: string
+          processed_at: string | null
+          requested_at: string
+          status: Database["public"]["Enums"]["partner_withdrawal_status"]
+        }
+        Insert: {
+          amount_fcfa: number
+          id?: string
+          metadata?: Json | null
+          partner_id: string
+          processed_at?: string | null
+          requested_at?: string
+          status?: Database["public"]["Enums"]["partner_withdrawal_status"]
+        }
+        Update: {
+          amount_fcfa?: number
+          id?: string
+          metadata?: Json | null
+          partner_id?: string
+          processed_at?: string | null
+          requested_at?: string
+          status?: Database["public"]["Enums"]["partner_withdrawal_status"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "partner_withdrawal_requests_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "partners"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       partners: {
         Row: {
           code: string
@@ -518,6 +1123,47 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: true
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      payments: {
+        Row: {
+          amount_fcfa: number
+          created_at: string
+          id: string
+          paid_at: string | null
+          payment_status: Database["public"]["Enums"]["payment_status"]
+          provider: string | null
+          provider_ref: string | null
+          transaction_id: string
+        }
+        Insert: {
+          amount_fcfa: number
+          created_at?: string
+          id?: string
+          paid_at?: string | null
+          payment_status?: Database["public"]["Enums"]["payment_status"]
+          provider?: string | null
+          provider_ref?: string | null
+          transaction_id: string
+        }
+        Update: {
+          amount_fcfa?: number
+          created_at?: string
+          id?: string
+          paid_at?: string | null
+          payment_status?: Database["public"]["Enums"]["payment_status"]
+          provider?: string | null
+          provider_ref?: string | null
+          transaction_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payments_transaction_id_fkey"
+            columns: ["transaction_id"]
+            isOneToOne: false
+            referencedRelation: "transactions"
             referencedColumns: ["id"]
           },
         ]
@@ -558,29 +1204,272 @@ export type Database = {
         }
         Relationships: []
       }
-      scans: {
+      scanner_audit_log: {
         Row: {
+          access_id: string | null
+          created_at: string
+          denial_reason:
+            | Database["public"]["Enums"]["scanner_denial_reason"]
+            | null
+          device_id: string | null
+          event_id: string
+          gate_code: Database["public"]["Enums"]["scanner_gate_code"]
+          id: string
+          ip_address: unknown
+          metadata: Json | null
+          pass_reference: string
+          scan_id: string | null
+          scanner_id: string
+          validation_status: string
+        }
+        Insert: {
+          access_id?: string | null
+          created_at?: string
+          denial_reason?:
+            | Database["public"]["Enums"]["scanner_denial_reason"]
+            | null
+          device_id?: string | null
+          event_id: string
+          gate_code?: Database["public"]["Enums"]["scanner_gate_code"]
+          id?: string
+          ip_address?: unknown
+          metadata?: Json | null
+          pass_reference: string
+          scan_id?: string | null
+          scanner_id: string
+          validation_status: string
+        }
+        Update: {
+          access_id?: string | null
+          created_at?: string
+          denial_reason?:
+            | Database["public"]["Enums"]["scanner_denial_reason"]
+            | null
+          device_id?: string | null
+          event_id?: string
+          gate_code?: Database["public"]["Enums"]["scanner_gate_code"]
+          id?: string
+          ip_address?: unknown
+          metadata?: Json | null
+          pass_reference?: string
+          scan_id?: string | null
+          scanner_id?: string
+          validation_status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "scanner_audit_log_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "scanner_audit_log_scan_id_fkey"
+            columns: ["scan_id"]
+            isOneToOne: false
+            referencedRelation: "scans"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "scanner_audit_log_scanner_id_fkey"
+            columns: ["scanner_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      scanner_gates: {
+        Row: {
+          code: Database["public"]["Enums"]["scanner_gate_code"]
+          created_at: string
           event_id: string
           id: string
+          is_active: boolean
+          label: string
+        }
+        Insert: {
+          code: Database["public"]["Enums"]["scanner_gate_code"]
+          created_at?: string
+          event_id: string
+          id?: string
+          is_active?: boolean
+          label: string
+        }
+        Update: {
+          code?: Database["public"]["Enums"]["scanner_gate_code"]
+          created_at?: string
+          event_id?: string
+          id?: string
+          is_active?: boolean
+          label?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "scanner_gates_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      scanner_offline_queue: {
+        Row: {
+          device_id: string | null
+          event_id: string
+          gate_code: Database["public"]["Enums"]["scanner_gate_code"]
+          id: string
+          pass_reference: string
+          payload: Json | null
+          queued_at: string
+          scanner_id: string
+          sync_error: string | null
+          synced_at: string | null
+        }
+        Insert: {
+          device_id?: string | null
+          event_id: string
+          gate_code?: Database["public"]["Enums"]["scanner_gate_code"]
+          id?: string
+          pass_reference: string
+          payload?: Json | null
+          queued_at?: string
+          scanner_id: string
+          sync_error?: string | null
+          synced_at?: string | null
+        }
+        Update: {
+          device_id?: string | null
+          event_id?: string
+          gate_code?: Database["public"]["Enums"]["scanner_gate_code"]
+          id?: string
+          pass_reference?: string
+          payload?: Json | null
+          queued_at?: string
+          scanner_id?: string
+          sync_error?: string | null
+          synced_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "scanner_offline_queue_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "scanner_offline_queue_scanner_id_fkey"
+            columns: ["scanner_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      scanner_team_members: {
+        Row: {
+          created_at: string
+          display_name: string | null
+          event_id: string
+          id: string
+          is_active: boolean
+          team_role: Database["public"]["Enums"]["scanner_team_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          display_name?: string | null
+          event_id: string
+          id?: string
+          is_active?: boolean
+          team_role?: Database["public"]["Enums"]["scanner_team_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          display_name?: string | null
+          event_id?: string
+          id?: string
+          is_active?: boolean
+          team_role?: Database["public"]["Enums"]["scanner_team_role"]
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "scanner_team_members_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "scanner_team_members_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      scans: {
+        Row: {
+          access_id: string | null
+          access_type_label: string | null
+          denial_reason:
+            | Database["public"]["Enums"]["scanner_denial_reason"]
+            | null
+          device_id: string | null
+          event_id: string
+          gate_code: Database["public"]["Enums"]["scanner_gate_code"] | null
+          guest_first_name: string | null
+          guest_last_name: string | null
+          id: string
+          ip_address: unknown
           metadata: Json | null
+          pass_kind: string | null
           pass_reference: string
           result: Database["public"]["Enums"]["scan_result"]
           scanned_at: string
           scanner_id: string
         }
         Insert: {
+          access_id?: string | null
+          access_type_label?: string | null
+          denial_reason?:
+            | Database["public"]["Enums"]["scanner_denial_reason"]
+            | null
+          device_id?: string | null
           event_id: string
+          gate_code?: Database["public"]["Enums"]["scanner_gate_code"] | null
+          guest_first_name?: string | null
+          guest_last_name?: string | null
           id?: string
+          ip_address?: unknown
           metadata?: Json | null
+          pass_kind?: string | null
           pass_reference: string
           result: Database["public"]["Enums"]["scan_result"]
           scanned_at?: string
           scanner_id: string
         }
         Update: {
+          access_id?: string | null
+          access_type_label?: string | null
+          denial_reason?:
+            | Database["public"]["Enums"]["scanner_denial_reason"]
+            | null
+          device_id?: string | null
           event_id?: string
+          gate_code?: Database["public"]["Enums"]["scanner_gate_code"] | null
+          guest_first_name?: string | null
+          guest_last_name?: string | null
           id?: string
+          ip_address?: unknown
           metadata?: Json | null
+          pass_kind?: string | null
           pass_reference?: string
           result?: Database["public"]["Enums"]["scan_result"]
           scanned_at?: string
@@ -605,37 +1494,52 @@ export type Database = {
       }
       ticket_types: {
         Row: {
+          code: string | null
+          commission_fcfa: number | null
           created_at: string
           currency: string
+          description: string | null
           event_id: string
           id: string
           is_active: boolean
           name: string
+          organizer_net_fcfa: number | null
           price_cents: number
           quantity: number | null
           sold_count: number
+          ticketing_status: Database["public"]["Enums"]["ticketing_status"]
         }
         Insert: {
+          code?: string | null
+          commission_fcfa?: number | null
           created_at?: string
           currency?: string
+          description?: string | null
           event_id: string
           id?: string
           is_active?: boolean
           name: string
+          organizer_net_fcfa?: number | null
           price_cents?: number
           quantity?: number | null
           sold_count?: number
+          ticketing_status?: Database["public"]["Enums"]["ticketing_status"]
         }
         Update: {
+          code?: string | null
+          commission_fcfa?: number | null
           created_at?: string
           currency?: string
+          description?: string | null
           event_id?: string
           id?: string
           is_active?: boolean
           name?: string
+          organizer_net_fcfa?: number | null
           price_cents?: number
           quantity?: number | null
           sold_count?: number
+          ticketing_status?: Database["public"]["Enums"]["ticketing_status"]
         }
         Relationships: [
           {
@@ -649,36 +1553,82 @@ export type Database = {
       }
       tickets: {
         Row: {
+          access_token: string | null
+          buyer_email: string | null
+          buyer_first_name: string | null
+          buyer_last_name: string | null
+          buyer_phone: string | null
+          claimed: boolean
+          claimed_at: string | null
+          claimed_by: string | null
           created_at: string
           event_id: string
           id: string
           owner_id: string | null
+          payment_status: Database["public"]["Enums"]["payment_status"]
           purchased_at: string | null
           qr_payload: string
+          scanned_at: string | null
           status: string
           ticket_type_id: string
+          transaction_id: string | null
+          unique_code: string | null
+          user_id: string | null
         }
         Insert: {
+          access_token?: string | null
+          buyer_email?: string | null
+          buyer_first_name?: string | null
+          buyer_last_name?: string | null
+          buyer_phone?: string | null
+          claimed?: boolean
+          claimed_at?: string | null
+          claimed_by?: string | null
           created_at?: string
           event_id: string
           id?: string
           owner_id?: string | null
+          payment_status?: Database["public"]["Enums"]["payment_status"]
           purchased_at?: string | null
           qr_payload: string
+          scanned_at?: string | null
           status?: string
           ticket_type_id: string
+          transaction_id?: string | null
+          unique_code?: string | null
+          user_id?: string | null
         }
         Update: {
+          access_token?: string | null
+          buyer_email?: string | null
+          buyer_first_name?: string | null
+          buyer_last_name?: string | null
+          buyer_phone?: string | null
+          claimed?: boolean
+          claimed_at?: string | null
+          claimed_by?: string | null
           created_at?: string
           event_id?: string
           id?: string
           owner_id?: string | null
+          payment_status?: Database["public"]["Enums"]["payment_status"]
           purchased_at?: string | null
           qr_payload?: string
+          scanned_at?: string | null
           status?: string
           ticket_type_id?: string
+          transaction_id?: string | null
+          unique_code?: string | null
+          user_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "tickets_claimed_by_fkey"
+            columns: ["claimed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "tickets_event_id_fkey"
             columns: ["event_id"]
@@ -700,40 +1650,96 @@ export type Database = {
             referencedRelation: "ticket_types"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "tickets_transaction_id_fkey"
+            columns: ["transaction_id"]
+            isOneToOne: false
+            referencedRelation: "transactions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tickets_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
         ]
       }
       transactions: {
         Row: {
           amount_cents: number
+          buyer_email: string | null
+          buyer_name: string | null
+          buyer_phone: string | null
+          commission_fcfa: number
           created_at: string
           currency: string
           event_id: string
+          frozen_at: string | null
+          gross_fcfa: number | null
           id: string
+          organizer_net_fcfa: number
+          partner_commission_fcfa: number
+          payment_status: Database["public"]["Enums"]["payment_status"]
           provider: string | null
           provider_ref: string | null
+          quantity: number
+          reference_code: string | null
           status: string
+          ticket_token: string | null
+          ticket_type_id: string | null
+          universe: Database["public"]["Enums"]["finance_universe"] | null
           user_id: string | null
         }
         Insert: {
           amount_cents: number
+          buyer_email?: string | null
+          buyer_name?: string | null
+          buyer_phone?: string | null
+          commission_fcfa?: number
           created_at?: string
           currency?: string
           event_id: string
+          frozen_at?: string | null
+          gross_fcfa?: number | null
           id?: string
+          organizer_net_fcfa?: number
+          partner_commission_fcfa?: number
+          payment_status?: Database["public"]["Enums"]["payment_status"]
           provider?: string | null
           provider_ref?: string | null
+          quantity?: number
+          reference_code?: string | null
           status?: string
+          ticket_token?: string | null
+          ticket_type_id?: string | null
+          universe?: Database["public"]["Enums"]["finance_universe"] | null
           user_id?: string | null
         }
         Update: {
           amount_cents?: number
+          buyer_email?: string | null
+          buyer_name?: string | null
+          buyer_phone?: string | null
+          commission_fcfa?: number
           created_at?: string
           currency?: string
           event_id?: string
+          frozen_at?: string | null
+          gross_fcfa?: number | null
           id?: string
+          organizer_net_fcfa?: number
+          partner_commission_fcfa?: number
+          payment_status?: Database["public"]["Enums"]["payment_status"]
           provider?: string | null
           provider_ref?: string | null
+          quantity?: number
+          reference_code?: string | null
           status?: string
+          ticket_token?: string | null
+          ticket_type_id?: string | null
+          universe?: Database["public"]["Enums"]["finance_universe"] | null
           user_id?: string | null
         }
         Relationships: [
@@ -745,7 +1751,87 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "transactions_ticket_type_id_fkey"
+            columns: ["ticket_type_id"]
+            isOneToOne: false
+            referencedRelation: "ticket_types"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "transactions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      wallet_notification_queue: {
+        Row: {
+          access_id: string | null
+          id: string
+          kind: Database["public"]["Enums"]["wallet_notification_kind"]
+          payload: Json | null
+          scheduled_at: string
+          sent_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          access_id?: string | null
+          id?: string
+          kind: Database["public"]["Enums"]["wallet_notification_kind"]
+          payload?: Json | null
+          scheduled_at?: string
+          sent_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          access_id?: string | null
+          id?: string
+          kind?: Database["public"]["Enums"]["wallet_notification_kind"]
+          payload?: Json | null
+          scheduled_at?: string
+          sent_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "wallet_notification_queue_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      wallet_pass_artifacts: {
+        Row: {
+          access_id: string
+          artifact_url: string | null
+          created_at: string
+          id: string
+          platform: string
+          user_id: string | null
+        }
+        Insert: {
+          access_id: string
+          artifact_url?: string | null
+          created_at?: string
+          id?: string
+          platform: string
+          user_id?: string | null
+        }
+        Update: {
+          access_id?: string
+          artifact_url?: string | null
+          created_at?: string
+          id?: string
+          platform?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "wallet_pass_artifacts_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
@@ -798,18 +1884,355 @@ export type Database = {
           },
         ]
       }
+      wallet_reconciliation_runs: {
+        Row: {
+          created_at: string
+          email: string | null
+          id: string
+          invitations_linked: number
+          phone: string | null
+          tickets_linked: number
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          email?: string | null
+          id?: string
+          invitations_linked?: number
+          phone?: string | null
+          tickets_linked?: number
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          email?: string | null
+          id?: string
+          invitations_linked?: number
+          phone?: string | null
+          tickets_linked?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "wallet_reconciliation_runs_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
-      [_ in never]: never
+      wallet_access_unified: {
+        Row: {
+          access_code: string | null
+          access_id: string | null
+          access_type: string | null
+          claimed: boolean | null
+          claimed_at: string | null
+          claimed_by: string | null
+          created_at: string | null
+          email: string | null
+          event_id: string | null
+          holder_name: string | null
+          pass_kind: string | null
+          phone: string | null
+          public_token: string | null
+          qr_code: string | null
+          status: Database["public"]["Enums"]["invora_access_status"] | null
+          universe: Database["public"]["Enums"]["invora_access_universe"] | null
+          user_id: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
+      calculate_inviter_pricing_quote: {
+        Args: { p_existing_count?: number; p_quantity: number }
+        Returns: Json
+      }
+      calculate_inviter_unit_price: {
+        Args: { p_access_index: number }
+        Returns: number
+      }
+      calculate_invora_commission: {
+        Args: { p_price_fcfa: number }
+        Returns: {
+          commission_fcfa: number
+          currency: string
+          organizer_net_fcfa: number
+          price_fcfa: number
+        }[]
+      }
+      calculate_partner_commission: {
+        Args: {
+          p_metric: number
+          p_universe: Database["public"]["Enums"]["partner_universe"]
+        }
+        Returns: {
+          commission_fcfa: number
+          metric: number
+          universe: Database["public"]["Enums"]["partner_universe"]
+        }[]
+      }
+      calculate_partner_commission_inviter: {
+        Args: { p_access_count: number }
+        Returns: number
+      }
+      calculate_partner_commission_vendre: {
+        Args: { p_ticket_price_fcfa: number }
+        Returns: number
+      }
+      calculate_vendre_pricing_quote: {
+        Args: { p_price_fcfa: number; p_quantity?: number }
+        Returns: Json
+      }
+      claim_access: {
+        Args: { p_public_token: string; p_user_id?: string }
+        Returns: Json
+      }
+      claim_invitation: {
+        Args: { p_token: string; p_user_id?: string }
+        Returns: string
+      }
+      claim_ticket: {
+        Args: { p_access_token: string; p_user_id?: string }
+        Returns: string
+      }
+      complete_ticket_payment: {
+        Args: { p_transaction_id: string }
+        Returns: {
+          access_token: string | null
+          buyer_email: string | null
+          buyer_first_name: string | null
+          buyer_last_name: string | null
+          buyer_phone: string | null
+          claimed: boolean
+          claimed_at: string | null
+          claimed_by: string | null
+          created_at: string
+          event_id: string
+          id: string
+          owner_id: string | null
+          payment_status: Database["public"]["Enums"]["payment_status"]
+          purchased_at: string | null
+          qr_payload: string
+          scanned_at: string | null
+          status: string
+          ticket_type_id: string
+          transaction_id: string | null
+          unique_code: string | null
+          user_id: string | null
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "tickets"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      create_organizer_payout_request: {
+        Args: { p_amount_fcfa: number }
+        Returns: string
+      }
+      create_partner_withdrawal_request: {
+        Args: { p_amount_fcfa: number; p_partner_id: string }
+        Returns: string
+      }
+      create_ticket_checkout: {
+        Args: {
+          p_buyer_email?: string
+          p_buyer_name: string
+          p_buyer_phone: string
+          p_event_id: string
+          p_quantity: number
+          p_ticket_type_id: string
+        }
+        Returns: string
+      }
+      freeze_finance_settlement: {
+        Args: { p_transaction_id: string }
+        Returns: string
+      }
+      get_finance_report: {
+        Args: { p_event_id?: string; p_scope: string }
+        Returns: Json
+      }
+      get_invitation_by_token: {
+        Args: { p_token: string }
+        Returns: {
+          access_type_code: string
+          claimed: boolean
+          event_id: string
+          event_location: string
+          event_starts_at: string
+          event_title: string
+          guest_email: string
+          guest_first_name: string
+          guest_last_name: string
+          guest_phone: string
+          id: string
+          opened_at: string
+          qr_payload: string
+          status: Database["public"]["Enums"]["invitation_status"]
+          token: string
+          unique_code: string
+        }[]
+      }
+      get_organizer_balance_summary: {
+        Args: { p_organizer_id?: string }
+        Returns: Json
+      }
+      get_public_ticketing: {
+        Args: { p_event_slug: string }
+        Returns: {
+          cover_url: string
+          description: string
+          event_id: string
+          location: string
+          starts_at: string
+          ticketing_status: Database["public"]["Enums"]["ticketing_status"]
+          title: string
+        }[]
+      }
+      get_scanner_live_stats: { Args: { p_event_id: string }; Returns: Json }
+      get_wallet_access_analytics: {
+        Args: { p_user_id?: string }
+        Returns: Json
+      }
       has_event_role: {
         Args: { p_event_id: string; p_roles: string[] }
         Returns: boolean
       }
+      inviter_next_threshold: {
+        Args: { p_after_index: number }
+        Returns: number
+      }
+      inviter_next_tier_hint: {
+        Args: { p_next_index: number }
+        Returns: string
+      }
+      inviter_tier_label: { Args: { p_access_index: number }; Returns: string }
       is_event_organizer: { Args: { p_event_id: string }; Returns: boolean }
+      list_user_wallet_accesses: {
+        Args: { p_user_id?: string }
+        Returns: {
+          access_code: string | null
+          access_id: string | null
+          access_type: string | null
+          claimed: boolean | null
+          claimed_at: string | null
+          claimed_by: string | null
+          created_at: string | null
+          email: string | null
+          event_id: string | null
+          holder_name: string | null
+          pass_kind: string | null
+          phone: string | null
+          public_token: string | null
+          qr_code: string | null
+          status: Database["public"]["Enums"]["invora_access_status"] | null
+          universe: Database["public"]["Enums"]["invora_access_universe"] | null
+          user_id: string | null
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "wallet_access_unified"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      mark_invitation_opened: {
+        Args: { p_token: string }
+        Returns: Database["public"]["Enums"]["invitation_status"]
+      }
+      reconcile_user_invitations: {
+        Args: { p_user_id?: string }
+        Returns: number
+      }
+      reconcile_user_tickets: { Args: { p_user_id?: string }; Returns: number }
+      reconcile_user_wallet: {
+        Args: { p_email?: string; p_phone?: string; p_user_id?: string }
+        Returns: Json
+      }
+      record_partner_conversion: {
+        Args: {
+          p_campaign_code: string
+          p_metric: number
+          p_reference_id: string
+          p_reference_type: string
+          p_transaction_id?: string
+        }
+        Returns: string
+      }
+      resolve_scan_pass: {
+        Args: { p_event_id: string; p_pass_reference: string }
+        Returns: {
+          access_id: string
+          access_status: string
+          access_type_label: string
+          expires_at: string
+          first_name: string
+          is_suspended: boolean
+          last_name: string
+          pass_kind: string
+          scanned_at: string
+        }[]
+      }
+      search_access_for_scan: {
+        Args: { p_event_id: string; p_query: string }
+        Returns: Json
+      }
+      search_user_wallet_accesses: {
+        Args: { p_query: string; p_user_id: string }
+        Returns: {
+          access_code: string | null
+          access_id: string | null
+          access_type: string | null
+          claimed: boolean | null
+          claimed_at: string | null
+          claimed_by: string | null
+          created_at: string | null
+          email: string | null
+          event_id: string | null
+          holder_name: string | null
+          pass_kind: string | null
+          phone: string | null
+          public_token: string | null
+          qr_code: string | null
+          status: Database["public"]["Enums"]["invora_access_status"] | null
+          universe: Database["public"]["Enums"]["invora_access_universe"] | null
+          user_id: string | null
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "wallet_access_unified"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      sync_scanner_offline_queue: {
+        Args: { p_queue_id: string }
+        Returns: Json
+      }
+      upsert_event_design_identity: {
+        Args: { p_event_id: string; p_fingerprint: string; p_payload: Json }
+        Returns: undefined
+      }
+      validate_access_scan: {
+        Args: {
+          p_device_id?: string
+          p_event_id: string
+          p_gate_code?: Database["public"]["Enums"]["scanner_gate_code"]
+          p_ip_address?: unknown
+          p_pass_reference: string
+        }
+        Returns: Json
+      }
     }
     Enums: {
+      distribution_channel: "whatsapp" | "email"
       event_status:
         | "draft"
         | "scheduled"
@@ -819,13 +2242,66 @@ export type Database = {
         | "archived"
       event_universe: "inviter" | "vendre"
       event_visibility: "private" | "public" | "unlisted"
+      finance_universe: "inviter" | "vendre"
+      invitation_status:
+        | "created"
+        | "distributed"
+        | "opened"
+        | "claimed"
+        | "scanned"
+        | "expired"
+        | "cancelled"
+      invora_access_status:
+        | "created"
+        | "distributed"
+        | "opened"
+        | "claimed"
+        | "scanned"
+        | "used"
+        | "expired"
+        | "cancelled"
+      invora_access_universe: "inviter" | "vendre"
+      partner_tracking_kind: "click" | "open" | "conversion"
+      partner_universe: "inviter" | "vendre"
+      partner_withdrawal_status: "pending" | "approved" | "paid" | "rejected"
+      payment_status: "pending" | "paid" | "failed" | "refunded"
+      payout_entity_type: "organizer" | "partner"
+      payout_request_status: "pending" | "approved" | "paid" | "rejected"
       scan_result: "valid" | "invalid" | "duplicate" | "expired"
+      scanner_denial_reason:
+        | "invalid_qr"
+        | "expired"
+        | "already_used"
+        | "cancelled"
+        | "suspended"
+        | "event_ended"
+      scanner_gate_code:
+        | "main"
+        | "vip"
+        | "backstage"
+        | "press"
+        | "staff"
+        | "corporate"
+      scanner_team_role: "chef_scanner" | "scanner_agent" | "supervisor"
+      ticketing_status:
+        | "draft"
+        | "published"
+        | "on_sale"
+        | "sold_out"
+        | "ended"
+        | "archived"
       user_role:
         | "organisateur"
         | "participant"
         | "partenaire"
         | "scanner"
         | "admin"
+      wallet_notification_kind:
+        | "access_received"
+        | "access_claimed"
+        | "access_used"
+        | "access_expired"
+        | "event_reminder"
       wallet_pass_type: "invitation" | "ticket" | "access"
     }
     CompositeTypes: {
@@ -1407,6 +2883,7 @@ export const Constants = {
   },
   public: {
     Enums: {
+      distribution_channel: ["whatsapp", "email"],
       event_status: [
         "draft",
         "scheduled",
@@ -1417,13 +2894,72 @@ export const Constants = {
       ],
       event_universe: ["inviter", "vendre"],
       event_visibility: ["private", "public", "unlisted"],
+      finance_universe: ["inviter", "vendre"],
+      invitation_status: [
+        "created",
+        "distributed",
+        "opened",
+        "claimed",
+        "scanned",
+        "expired",
+        "cancelled",
+      ],
+      invora_access_status: [
+        "created",
+        "distributed",
+        "opened",
+        "claimed",
+        "scanned",
+        "used",
+        "expired",
+        "cancelled",
+      ],
+      invora_access_universe: ["inviter", "vendre"],
+      partner_tracking_kind: ["click", "open", "conversion"],
+      partner_universe: ["inviter", "vendre"],
+      partner_withdrawal_status: ["pending", "approved", "paid", "rejected"],
+      payment_status: ["pending", "paid", "failed", "refunded"],
+      payout_entity_type: ["organizer", "partner"],
+      payout_request_status: ["pending", "approved", "paid", "rejected"],
       scan_result: ["valid", "invalid", "duplicate", "expired"],
+      scanner_denial_reason: [
+        "invalid_qr",
+        "expired",
+        "already_used",
+        "cancelled",
+        "suspended",
+        "event_ended",
+      ],
+      scanner_gate_code: [
+        "main",
+        "vip",
+        "backstage",
+        "press",
+        "staff",
+        "corporate",
+      ],
+      scanner_team_role: ["chef_scanner", "scanner_agent", "supervisor"],
+      ticketing_status: [
+        "draft",
+        "published",
+        "on_sale",
+        "sold_out",
+        "ended",
+        "archived",
+      ],
       user_role: [
         "organisateur",
         "participant",
         "partenaire",
         "scanner",
         "admin",
+      ],
+      wallet_notification_kind: [
+        "access_received",
+        "access_claimed",
+        "access_used",
+        "access_expired",
+        "event_reminder",
       ],
       wallet_pass_type: ["invitation", "ticket", "access"],
     },
