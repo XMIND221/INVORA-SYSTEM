@@ -11,6 +11,8 @@ cp .env.example .env
 npm run dev
 ```
 
+Ouvrir **http://localhost:8080** (port par défaut, compatible Lovable). Si le port est occupé, Vite affiche un autre port dans le terminal.
+
 ## Scripts
 
 | Commande | Description |
