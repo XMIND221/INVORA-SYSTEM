@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Link, Navigate } from 'react-router-dom';
 import { ArrowLeft, Plus } from 'lucide-react';
 import {
@@ -13,6 +13,8 @@ import { TicketingStatusBadge } from '@/components/lovable/TicketingStatusBadge'
 import { TICKET_PRESETS } from '@/features/engines/vendre.engine';
 import { useOrganizerEventParam } from '@/hooks/useOrganizerEvent';
 import { vendreService } from '@/services/vendre.service';
+import { useEventTicketTypes } from '@/hooks/useEventTicketTypes';
+import { useQueryClient } from '@tanstack/react-query';
 
 export default function VendreTicketsPage() {
   const { eventId, event } = useOrganizerEventParam();
@@ -20,16 +22,13 @@ export default function VendreTicketsPage() {
   const [code, setCode] = useState('standard');
   const [price, setPrice] = useState(10000);
   const [qty, setQty] = useState(100);
-  const [, tick] = useState(0);
-
-  useEffect(() => {
-    if (eventId) vendreService.initEvent(eventId);
-  }, [eventId]);
+  const { data: catalog, refetch } = useEventTicketTypes(eventId);
+  const qc = useQueryClient();
 
   if (!eventId || !event) return <Navigate to={LOVABLE_ROUTES.evenements} replace />;
   if (event.universe !== 'vendre') return <Navigate to={lovableEventHub(eventId)} replace />;
 
-  const types = vendreService.listTicketTypes(eventId);
+  const types = catalog?.types ?? [];
 
   const handleAdd = async () => {
     await vendreService.addTicketType(eventId, {
@@ -38,7 +37,8 @@ export default function VendreTicketsPage() {
       priceFcfa: price,
       quantity: qty,
     });
-    tick((n) => n + 1);
+    void refetch();
+    void qc.invalidateQueries({ queryKey: ['ticket-types', eventId] });
   };
 
   return (

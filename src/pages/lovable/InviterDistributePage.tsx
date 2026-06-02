@@ -6,6 +6,7 @@ import { PageHeader } from '@/components/lovable/PageHeader';
 import { RoleContextBar } from '@/components/lovable/RoleContextBar';
 import { useOrganizerEventParam } from '@/hooks/useOrganizerEvent';
 import { inviterService } from '@/services/inviter.service';
+import { notificationService } from '@/services/notification.service';
 import type { DistributionChannel } from '@/types/inviter';
 
 export default function InviterDistributePage() {
@@ -14,6 +15,8 @@ export default function InviterDistributePage() {
   const [whatsapp, setWhatsapp] = useState(true);
   const [email, setEmail] = useState(true);
   const [sent, setSent] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
   const [, tick] = useState(0);
 
   useEffect(() => {
@@ -43,11 +46,25 @@ export default function InviterDistributePage() {
     ...(email ? (['email'] as const) : []),
   ];
 
-  const handleDistribute = () => {
+  const handleDistribute = async () => {
     if (selected.size === 0 || channels.length === 0) return;
-    inviterService.distribute(eventId, [...selected], channels);
-    setSent(true);
-    tick((n) => n + 1);
+    setBusy(true);
+    setError(null);
+    try {
+      const ids = [...selected];
+      const isUuid = (id: string) =>
+        /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id);
+      if (ids.every(isUuid)) {
+        await notificationService.enqueueInviterDistributions(eventId, ids, channels);
+      }
+      inviterService.distribute(eventId, ids, channels);
+      setSent(true);
+      tick((n) => n + 1);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'distribution_failed');
+    } finally {
+      setBusy(false);
+    }
   };
 
   return (
@@ -116,9 +133,12 @@ export default function InviterDistributePage() {
           ))}
         </ul>
 
+        {error && (
+          <p className="text-xs text-destructive mb-4 p-3 border border-destructive/30 rounded-lg">{error}</p>
+        )}
         {sent && (
           <p className="text-xs text-[color:var(--color-success)] mb-4 p-3 border border-border rounded-lg">
-            Distribution enregistrée — liens sécurisés et QR uniques générés pour chaque invité.
+            Distribution enregistrée — file de communication INVORA (email / WhatsApp / in-app).
           </p>
         )}
 
@@ -136,8 +156,8 @@ export default function InviterDistributePage() {
 
         <button
           type="button"
-          disabled={selected.size === 0 || channels.length === 0}
-          onClick={handleDistribute}
+          disabled={selected.size === 0 || channels.length === 0 || busy}
+          onClick={() => void handleDistribute()}
           className="w-full py-4 bg-primary text-primary-foreground rounded-2xl text-sm font-medium disabled:opacity-40"
         >
           Distribuer {selected.size > 0 ? `(${selected.size})` : ''}

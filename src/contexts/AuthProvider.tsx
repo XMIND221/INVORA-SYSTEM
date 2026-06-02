@@ -7,12 +7,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const { setSession, setUser, setProfile, setLoading } = useAuthStore();
 
   useEffect(() => {
-    void getSession().then((session) => {
-      if (session) {
-        setSession(session);
-        setUser(session.user);
-      }
-    });
+    void getSession()
+      .then(async (session) => {
+        if (session) {
+          setSession(session);
+          setUser(session.user);
+          try {
+            const profile = await profilesService.getProfile(session.user.id);
+            setProfile(profile);
+          } catch {
+            setProfile(null);
+          }
+        }
+      })
+      .finally(() => setLoading(false));
 
     const { data: subscription } = onAuthStateChange(async (_event, session) => {
       setSession(session);

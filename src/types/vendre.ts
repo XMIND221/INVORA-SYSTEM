@@ -69,6 +69,9 @@ export interface VendreAnalyticsSnapshot {
   purchases: number;
   conversionRate: number;
   ticketsSold: number;
+  ticketsUsed?: number;
+  ticketsRefunded?: number;
+  attendanceRate?: number;
   grossRevenueFcfa: number;
   organizerRevenueFcfa: number;
   invoraCommissionFcfa: number;

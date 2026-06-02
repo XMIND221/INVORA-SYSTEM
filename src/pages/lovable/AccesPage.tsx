@@ -6,8 +6,8 @@ import { PageHeader } from '@/components/lovable/PageHeader';
 import { RoleContextBar } from '@/components/lovable/RoleContextBar';
 import { WalletNotificationPrepList } from '@/components/lovable/WalletNotificationPrep';
 import { WalletPassExportBar } from '@/components/lovable/WalletPassExportBar';
+import { TicketQrDisplay } from '@/components/lovable/TicketQrDisplay';
 import { groupAccessByWalletTab, WALLET_SECTION_LABEL } from '@/features/engines/access.engine';
-import { WALLET_RECONCILE_DEMO } from '@/integration/lovable/wallet-access-mock';
 import {
   WALLET_COPY,
   WALLET_ENGINE_COPY,
@@ -19,25 +19,59 @@ import {
   lovableWalletSearch,
 } from '@/lib/constants';
 import { accessService } from '@/services/access.service';
+import { useAuth } from '@/hooks/useAuth';
+import { useInvalidateWallet, useWalletAccesses, useWalletAnalytics } from '@/hooks/useWalletAccesses';
+import { LoadingPage, PermissionDeniedState } from '@/components/lovable/ui-states';
 import type { InvoraAccess, WalletSectionTab } from '@/types/access';
 
 const WALLET_TABS: WalletSectionTab[] = ['today', 'upcoming', 'used', 'expired', 'cancelled'];
 
 export default function AccesPage() {
   const [tab, setTab] = useState<WalletSectionTab>('today');
-  const userId = accessService.getWalletUserId();
-  const accesses = accessService.listAccesses(userId);
+  const { user, profile, isAuthenticated, isLoading: authLoading } = useAuth();
+  const invalidate = useInvalidateWallet();
+  const { data: accesses = [], isLoading, refetch } = useWalletAccesses();
+  const { data: analytics } = useWalletAnalytics();
+
   const grouped = groupAccessByWalletTab(accesses);
   const primary = grouped.today[0] ?? grouped.upcoming[0] ?? grouped.used[0];
-  const analytics = accessService.analytics(userId);
 
   const handleReconcile = () => {
-    void accessService.reconcile({
-      userId: WALLET_RECONCILE_DEMO.userId,
-      phone: WALLET_RECONCILE_DEMO.phone,
-      email: WALLET_RECONCILE_DEMO.email,
-    });
-    accessService.setWalletUserId(WALLET_RECONCILE_DEMO.userId);
+    if (!user?.id) return;
+    void accessService
+      .reconcile({
+        userId: user.id,
+        phone: profile?.phone ?? undefined,
+        email: profile?.email ?? user.email ?? undefined,
+      })
+      .then(() => {
+        invalidate();
+        void refetch();
+      });
+  };
+
+  if (authLoading || isLoading) {
+    return (
+      <div className="min-h-screen bg-background">
+        <LoadingPage />
+      </div>
+    );
+  }
+
+  if (!isAuthenticated || !user?.id) {
+    return (
+      <div className="min-h-screen bg-background">
+        <PermissionDeniedState description="Connectez-vous pour voir vos billets et invitations." />
+      </div>
+    );
+  }
+
+  const stats = analytics ?? {
+    active: 0,
+    used: 0,
+    expired: 0,
+    cancelled: 0,
+    utilizationRate: 0,
   };
 
   return (
@@ -64,7 +98,7 @@ export default function AccesPage() {
           <PrimaryPass access={primary} />
         ) : (
           <div className="p-6 mb-4 rounded-2xl border border-dashed border-border text-center text-sm text-muted-foreground">
-            Aucun accès dans ce wallet pour le moment.
+            Aucun accès dans ce wallet pour le moment. Achetez un billet ou réclamez une invitation.
           </div>
         )}
 
@@ -78,7 +112,7 @@ export default function AccesPage() {
           className="w-full mb-4 py-3 flex items-center justify-center gap-2 border border-border rounded-xl text-[10px] uppercase tracking-[0.2em] text-muted-foreground hover:text-foreground"
         >
           <RefreshCw className="size-3.5" />
-          {WALLET_RECONCILE_DEMO.label}
+          Réconcilier mes accès
         </button>
         <p className="text-[10px] text-muted-foreground mb-4">
           {INVITER_ENGINE_COPY.reconcile} · {WALLET_ENGINE_COPY.reconcile}
@@ -86,15 +120,15 @@ export default function AccesPage() {
 
         <div className="grid grid-cols-3 gap-3 mb-4 py-3 border-y border-border">
           <div className="text-center">
-            <p className="font-mono text-lg">{analytics.active}</p>
+            <p className="font-mono text-lg">{stats.active}</p>
             <p className="text-[9px] uppercase tracking-[0.14em] text-muted-foreground">Actifs</p>
           </div>
           <div className="text-center">
-            <p className="font-mono text-lg">{analytics.used}</p>
+            <p className="font-mono text-lg">{stats.used}</p>
             <p className="text-[9px] uppercase tracking-[0.14em] text-muted-foreground">Utilisés</p>
           </div>
           <div className="text-center">
-            <p className="font-mono text-lg">{analytics.utilizationRate}%</p>
+            <p className="font-mono text-lg">{stats.utilizationRate}%</p>
             <p className="text-[9px] uppercase tracking-[0.14em] text-muted-foreground">Taux</p>
           </div>
         </div>
@@ -155,18 +189,9 @@ function PrimaryPass({ access }: { access: InvoraAccess }) {
           <span className="size-2 rounded-full bg-[color:var(--color-success)]" />
         </div>
         <div className="p-6 flex flex-col items-center">
-          <div className="p-3 bg-white rounded-2xl">
-            <div className="size-44 grid grid-cols-12 gap-[2px]">
-              {Array.from({ length: 144 }).map((_, i) => {
-                const on = (i * 53) % 7 < 3;
-                return (
-                  <div key={i} className={`rounded-[1px] ${on ? 'bg-black' : 'bg-black/5'}`} />
-                );
-              })}
-            </div>
-          </div>
+          <TicketQrDisplay payload={access.qrCode} codeLabel={access.accessCode} size={176} />
           <p className="font-mono text-[10px] tracking-[0.3em] uppercase text-muted-foreground mt-4">
-            {access.accessCode} · {access.holderName}
+            {access.holderName}
           </p>
         </div>
       </div>

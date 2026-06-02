@@ -29,6 +29,7 @@ export interface Event {
   ends_at: string | null;
   location: string | null;
   cover_url: string | null;
+  capacity?: number | null;
   published_at: string | null;
   created_at: string;
   updated_at: string;

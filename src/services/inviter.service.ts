@@ -11,7 +11,6 @@ import {
   buildWhatsAppShareText,
   computeInviterAnalytics,
 } from '@/features/engines/inviter.engine';
-import { getOrganizerEvent } from '@/integration/lovable/organizer-mock';
 
 function accessTypeLabel(eventId: string, code: string): string {
   const types = useInviterStore.getState().listAccessTypes(eventId);
@@ -43,13 +42,12 @@ export const inviterService = {
   getPublicInvitation(token: string): PublicInvitationView | null {
     const guest = useInviterStore.getState().getGuestByToken(token);
     if (!guest) return null;
-    const event = getOrganizerEvent(guest.eventId);
     useInviterStore.getState().openByToken(token);
     return {
       token: guest.token,
-      eventTitle: event?.title ?? 'Expérience INVORA',
-      eventDate: event?.dateLabel,
-      eventLocation: event?.location,
+      eventTitle: 'Expérience INVORA',
+      eventDate: undefined,
+      eventLocation: undefined,
       guestName: `${guest.firstName} ${guest.lastName}`,
       accessTypeLabel: accessTypeLabel(guest.eventId, guest.accessTypeCode),
       uniqueCode: guest.uniqueCode,

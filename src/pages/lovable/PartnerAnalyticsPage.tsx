@@ -4,11 +4,21 @@ import { LOVABLE_ROUTES } from '@/lib/constants';
 import { PageHeader } from '@/components/lovable/PageHeader';
 import { RoleContextBar } from '@/components/lovable/RoleContextBar';
 import { Stat } from '@/components/lovable/Stat';
-import { partnerService } from '@/services/partner.service';
+import { usePartnerDashboard } from '@/hooks/usePartnerDashboard';
+import { LoadingPage } from '@/components/lovable/ui-states';
 
 export default function PartnerAnalyticsPage() {
-  const a = partnerService.analytics();
-  const campaigns = partnerService.listCampaigns();
+  const { data, isLoading } = usePartnerDashboard();
+  const a = data?.analytics;
+  const campaigns = data?.campaigns ?? [];
+
+  if (isLoading || !a) {
+    return (
+      <div className="min-h-screen bg-background">
+        <LoadingPage />
+      </div>
+    );
+  }
 
   return (
     <div className="pb-4">
@@ -37,21 +47,24 @@ export default function PartnerAnalyticsPage() {
           <Stat label="Clics" value={String(a.clicks)} />
           <Stat label="Ouvertures" value={String(a.opens)} />
           <Stat label="Conversions" value={String(a.conversions)} />
+          <Stat label="Taux conv." value={`${a.conversionRate ?? 0}%`} />
           <Stat label="Invitations" value={String(a.invitations)} />
           <Stat label="Ventes" value={String(a.sales)} />
           <Stat label="Commissions" value={`${a.commissionFcfa.toLocaleString('fr-FR')} F`} />
         </div>
 
-        <p className="eyebrow mt-6 mb-3">Par campagne</p>
+        <p className="eyebrow mt-6 mb-3">Top campagnes</p>
         <ul className="space-y-2">
-          {campaigns.map((c) => (
-            <li key={c.id} className="p-4 rounded-xl bg-surface border border-border">
-              <p className="font-medium">{c.eventTitle}</p>
-              <p className="text-[10px] text-muted-foreground mt-1">
-                {c.clicks} clics · {c.conversions} conv. · {c.commissionFcfa} FCFA
-              </p>
-            </li>
-          ))}
+          {[...campaigns]
+            .sort((x, y) => y.commissionFcfa - x.commissionFcfa)
+            .map((c) => (
+              <li key={c.id} className="p-4 rounded-xl bg-surface border border-border">
+                <p className="font-medium">{c.eventTitle}</p>
+                <p className="text-[10px] text-muted-foreground mt-1">
+                  {c.clicks} clics · {c.conversions} conv. · {c.commissionFcfa} FCFA
+                </p>
+              </li>
+            ))}
         </ul>
       </div>
     </div>

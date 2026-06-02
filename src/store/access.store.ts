@@ -5,8 +5,7 @@ import {
   reconcileAccessesForProfile,
   ticketToAccess,
 } from '@/features/engines/access.engine';
-import { getOrganizerEvent } from '@/integration/lovable/organizer-mock';
-import { MOCK_WALLET_NOTIFICATIONS, MOCK_WALLET_USER_ID } from '@/integration/lovable/wallet-access-mock';
+import { MOCK_WALLET_USER_ID } from '@/integration/lovable/wallet-access-mock';
 import { useInviterStore } from '@/store/inviter.store';
 import { useVendreStore } from '@/store/vendre.store';
 import type { InvoraAccess, WalletAnalyticsSnapshot, WalletNotificationPrep } from '@/types/access';
@@ -38,7 +37,7 @@ function guestsVisibleInWallet(guests: InviterGuest[], userId: string): InviterG
 
 export const useAccessStore = create<AccessState>((set, get) => ({
   walletUserId: MOCK_WALLET_USER_ID,
-  notifications: [...MOCK_WALLET_NOTIFICATIONS],
+  notifications: [],
 
   setWalletUserId: (id) => set({ walletUserId: id }),
 
@@ -52,25 +51,23 @@ export const useAccessStore = create<AccessState>((set, get) => ({
       ),
     ];
 
-    const invitationAccesses = guests.map((g) => {
-      const event = getOrganizerEvent(g.eventId);
-      return inviterGuestToAccess(g, {
-        eventTitle: event?.title ?? g.eventId,
-        eventDate: event?.dateLabel,
-        eventLocation: event?.location,
+    const invitationAccesses = guests.map((g) =>
+      inviterGuestToAccess(g, {
+        eventTitle: g.eventId,
+        eventDate: undefined,
+        eventLocation: undefined,
         accessTypeLabel: accessTypeLabel(g.eventId, g.accessTypeCode),
-      });
-    });
+      }),
+    );
 
     const tickets = useVendreStore.getState().walletTicketsForUser(userId);
-    const ticketAccesses = tickets.map((t) => {
-      const event = getOrganizerEvent(t.eventId);
-      return ticketToAccess(t, {
-        eventTitle: event?.title ?? t.eventId,
-        eventDate: event?.dateLabel,
-        eventLocation: event?.location,
-      });
-    });
+    const ticketAccesses = tickets.map((t) =>
+      ticketToAccess(t, {
+        eventTitle: t.eventId,
+        eventDate: undefined,
+        eventLocation: undefined,
+      }),
+    );
 
     return [...invitationAccesses, ...ticketAccesses].sort(
       (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),

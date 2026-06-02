@@ -13,7 +13,9 @@
 npm run dev
 ```
 
-Ouvrir `http://localhost:5173` → sélection du pilier → navigation bottom.
+Ouvrir `http://localhost:8080` → sélection du pilier → navigation bottom.
+
+> Le dossier `bundle/` est une **référence Lovable** (TanStack Start) : ne pas le lancer sur le port 8080. L'app INVORA tourne à la racine du projet (`npm run dev`).
 
 ## Bridge technique
 

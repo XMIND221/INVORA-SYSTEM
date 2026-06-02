@@ -1,12 +1,10 @@
 /**
  * Event Engine — orchestrates INVITER & VENDRE universes.
- * User creates an "experience"; INVORA generates invitations, tickets, access, QR, etc.
  */
 import { validatePublication } from '@/features/engines/publication.engine';
 import { isInvitationUniverse } from '@/features/engines/invitation.engine';
 import { isTicketingUniverse } from '@/features/engines/ticket.engine';
-import { eventsService } from '@/services';
-import type { CreateExperienceInput } from '@/services/events.service';
+import * as eventsService from '@/services/events.service';
 import type { Event } from '@/types/database';
 import type { ExperienceDraft } from '@/types/event';
 
@@ -18,26 +16,22 @@ export async function createExperienceFromDraft(
     throw new Error('Draft incomplet : title, universe et visibility requis.');
   }
 
-  const input: CreateExperienceInput = {
+  if (draft.eventId) {
+    return eventsService.updateExperience(eventsService.draftToUpdateInput(draft, draft.eventId));
+  }
+
+  return eventsService.createExperience(eventsService.draftToCreateInput(organizerId, draft));
+}
+
+export async function publishExperienceFromDraft(
+  eventId: string,
+  draft: ExperienceDraft,
+): Promise<Event> {
+  const startsAt = draft.startsAt ?? undefined;
+  const check = validatePublication({
     title: draft.title,
     universe: draft.universe,
     visibility: draft.visibility,
-    organizerId,
-    ...(draft.description ? { description: draft.description } : {}),
-    ...(draft.startsAt ? { startsAt: draft.startsAt } : {}),
-    ...(draft.endsAt ? { endsAt: draft.endsAt } : {}),
-    ...(draft.location ? { location: draft.location } : {}),
-  };
-
-  return eventsService.createExperience(input);
-}
-
-export async function publishExperience(event: Event, draft: ExperienceDraft) {
-  const startsAt = draft.startsAt ?? event.starts_at ?? undefined;
-  const check = validatePublication({
-    title: draft.title ?? event.title,
-    universe: draft.universe ?? event.universe,
-    visibility: draft.visibility ?? event.visibility,
     ...(startsAt ? { startsAt } : {}),
   });
 
@@ -45,12 +39,16 @@ export async function publishExperience(event: Event, draft: ExperienceDraft) {
     throw new Error(`Publication bloquée : ${check.blockers.join(', ')}`);
   }
 
+  await eventsService.updateExperience(eventsService.draftToUpdateInput(draft, eventId));
+  const published = await eventsService.publishExperience(eventId);
+
+  return published;
+}
+
+export function publicationCapabilities(event: Event) {
   return {
-    event,
-    capabilities: {
-      invitations: isInvitationUniverse(event.universe),
-      ticketing: isTicketingUniverse(event.universe),
-    },
+    invitations: isInvitationUniverse(event.universe),
+    ticketing: isTicketingUniverse(event.universe),
   };
 }
 

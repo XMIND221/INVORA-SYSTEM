@@ -1,8 +1,10 @@
+import { useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import { PageHeader } from '@/components/lovable/PageHeader';
 import { RoleContextBar } from '@/components/lovable/RoleContextBar';
 import { WalletPassExportBar } from '@/components/lovable/WalletPassExportBar';
+import { TicketQrDisplay } from '@/components/lovable/TicketQrDisplay';
 import {
   ACCESS_STATUS_LABEL,
   publicLinkForAccess,
@@ -11,21 +13,45 @@ import { claimStatusLabel, canClaimAccess } from '@/features/engines/claim.engin
 import { WALLET_ENGINE_COPY } from '@/integration/lovable/product-copy';
 import { LOVABLE_ROUTES } from '@/lib/constants';
 import { accessService } from '@/services/access.service';
+import { useAuth } from '@/hooks/useAuth';
+import { useInvalidateWallet, useWalletAccesses } from '@/hooks/useWalletAccesses';
+import { LoadingPage, NotFoundState } from '@/components/lovable/ui-states';
 
 export default function AccessDetailPage() {
   const { accessId } = useParams<{ accessId: string }>();
-  const access = accessId ? accessService.getAccess(accessId) : undefined;
+  const { user } = useAuth();
+  const { data: accesses = [], isLoading } = useWalletAccesses();
+  const invalidate = useInvalidateWallet();
+  const [claiming, setClaiming] = useState(false);
 
-  if (!access) {
+  const access = accessId ? accesses.find((a) => a.accessId === accessId) : undefined;
+
+  if (isLoading) {
     return (
-      <div className="px-6 py-12 text-center text-muted-foreground">
-        Accès introuvable.
-        <Link to={LOVABLE_ROUTES.acces} className="block mt-4 text-primary text-sm">
-          Retour wallet
-        </Link>
+      <div className="min-h-screen bg-background">
+        <LoadingPage />
       </div>
     );
   }
+
+  if (!access) {
+    return (
+      <div className="min-h-screen bg-background">
+        <NotFoundState title="Accès introuvable" backTo={LOVABLE_ROUTES.acces} backLabel="Wallet" />
+      </div>
+    );
+  }
+
+  const handleClaim = async () => {
+    if (!user?.id) return;
+    setClaiming(true);
+    try {
+      await accessService.claim(access.publicToken, user.id);
+      invalidate();
+    } finally {
+      setClaiming(false);
+    }
+  };
 
   return (
     <div className="pb-4">
@@ -45,17 +71,7 @@ export default function AccessDetailPage() {
         />
 
         <div className="p-6 flex flex-col items-center bg-surface border border-border rounded-2xl mb-4">
-          <div className="p-3 bg-white rounded-2xl">
-            <div className="size-48 grid grid-cols-12 gap-[2px]">
-              {Array.from({ length: 144 }).map((_, i) => {
-                const on = (i * 41 + access.accessCode.length) % 5 < 2;
-                return (
-                  <div key={i} className={`rounded-[1px] ${on ? 'bg-black' : 'bg-black/5'}`} />
-                );
-              })}
-            </div>
-          </div>
-          <p className="font-mono text-xs tracking-[0.25em] mt-4">{access.accessCode}</p>
+          <TicketQrDisplay payload={access.qrCode} codeLabel={access.accessCode} />
           <p className="text-sm text-muted-foreground mt-1">{access.holderName}</p>
         </div>
 
@@ -78,15 +94,14 @@ export default function AccessDetailPage() {
           >
             Ouvrir sans compte
           </a>
-          {canClaimAccess(access) && (
+          {canClaimAccess(access) && user?.id && (
             <button
               type="button"
-              className="w-full py-3 bg-primary text-primary-foreground rounded-xl text-[10px] uppercase tracking-[0.2em]"
-              onClick={() =>
-                void accessService.claim(access.publicToken, accessService.getWalletUserId())
-              }
+              disabled={claiming}
+              className="w-full py-3 bg-primary text-primary-foreground rounded-xl text-[10px] uppercase tracking-[0.2em] disabled:opacity-60"
+              onClick={() => void handleClaim()}
             >
-              Réclamer dans mon wallet
+              {claiming ? 'Réclamation…' : 'Réclamer dans mon wallet'}
             </button>
           )}
         </div>

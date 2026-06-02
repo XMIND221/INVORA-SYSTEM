@@ -1,17 +1,41 @@
 import { supabase } from '@/supabase/client';
 import {
   buildWalletHistory,
-  searchAccesses,
+  computeWalletAnalytics,
+  inviterGuestToAccess,
 } from '@/features/engines/access.engine';
-import { useAccessStore } from '@/store/access.store';
-import { inviterService } from '@/services/inviter.service';
-import { vendreService } from '@/services/vendre.service';
+import { useInviterStore } from '@/store/inviter.store';
 import type {
   InvoraAccess,
   WalletAnalyticsSnapshot,
   WalletHistoryEntry,
   WalletReconcileResult,
 } from '@/types/access';
+import {
+  getWalletAnalytics,
+  listUserWalletAccesses,
+  searchUserWalletAccesses,
+} from '@/services/wallet.service';
+import { inviterService } from '@/services/inviter.service';
+
+function inviterAccessesForUser(userId: string): InvoraAccess[] {
+  const guests = useInviterStore.getState().walletGuestsForUser(userId);
+  return guests.map((g) =>
+    inviterGuestToAccess(g, {
+      eventTitle: g.eventId,
+      accessTypeLabel: g.accessTypeCode,
+    }),
+  );
+}
+
+async function mergeWalletRows(userId: string, db: InvoraAccess[]): Promise<InvoraAccess[]> {
+  const inviter = inviterAccessesForUser(userId);
+  const ids = new Set(db.map((a) => a.accessId));
+  const extra = inviter.filter((a) => !ids.has(a.accessId));
+  return [...db, ...extra].sort(
+    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+  );
+}
 
 export async function reconcileUserWallet(input: {
   userId: string;
@@ -26,21 +50,12 @@ export async function reconcileUserWallet(input: {
     p_email: input.email ?? null,
   });
 
-  if (!error && data && typeof data === 'object') {
-    const row = data as Record<string, unknown>;
-    useAccessStore.getState().reconcileWallet(input.userId, input.phone, input.email);
-    return {
-      userId: String(row.userId ?? input.userId),
-      invitationsLinked: Number(row.invitationsLinked ?? 0),
-      ticketsLinked: Number(row.ticketsLinked ?? 0),
-    };
-  }
-
-  const linked = useAccessStore.getState().reconcileWallet(input.userId, input.phone, input.email);
+  if (error) throw error;
+  const row = (data ?? {}) as Record<string, unknown>;
   return {
-    userId: input.userId,
-    invitationsLinked: linked,
-    ticketsLinked: 0,
+    userId: String(row.userId ?? input.userId),
+    invitationsLinked: Number(row.invitationsLinked ?? 0),
+    ticketsLinked: Number(row.ticketsLinked ?? 0),
   };
 }
 
@@ -48,33 +63,43 @@ export async function claimAccess(publicToken: string, userId: string): Promise<
   const { error } = await (
     supabase.rpc as (fn: string, args: Record<string, unknown>) => ReturnType<typeof supabase.rpc>
   )('claim_access', { p_public_token: publicToken, p_user_id: userId });
+
+  if (error && !error.message.includes('invitation')) {
+    throw error;
+  }
   if (error) {
     inviterService.claim(publicToken, userId);
-    void vendreService.reconcileUser(userId);
   }
 }
 
 export const accessService = {
-  getWalletUserId: () => useAccessStore.getState().walletUserId,
-  setWalletUserId: (id: string) => useAccessStore.getState().setWalletUserId(id),
-  listAccesses: (userId?: string): InvoraAccess[] => {
-    const uid = userId ?? useAccessStore.getState().walletUserId;
-    return useAccessStore.getState().buildUnifiedAccesses(uid);
+  async listAccesses(userId: string): Promise<InvoraAccess[]> {
+    const rows = await listUserWalletAccesses(userId);
+    return mergeWalletRows(userId, rows);
   },
-  getAccess: (accessId: string, userId?: string): InvoraAccess | undefined => {
-    return accessService.listAccesses(userId).find((a) => a.accessId === accessId);
+
+  async getAccess(accessId: string, userId: string): Promise<InvoraAccess | undefined> {
+    const list = await accessService.listAccesses(userId);
+    return list.find((a) => a.accessId === accessId);
   },
-  search: (query: string, userId?: string): InvoraAccess[] => {
-    return searchAccesses(accessService.listAccesses(userId), query);
+
+  async search(query: string, userId: string): Promise<InvoraAccess[]> {
+    const rows = await searchUserWalletAccesses(userId, query);
+    return rows;
   },
-  history: (userId?: string): WalletHistoryEntry[] => {
-    return buildWalletHistory(accessService.listAccesses(userId));
+
+  async history(userId: string): Promise<WalletHistoryEntry[]> {
+    return buildWalletHistory(await accessService.listAccesses(userId));
   },
-  analytics: (userId?: string): WalletAnalyticsSnapshot => {
-    const uid = userId ?? useAccessStore.getState().walletUserId;
-    return useAccessStore.getState().analytics(uid);
+
+  async analytics(userId: string): Promise<WalletAnalyticsSnapshot> {
+    try {
+      return await getWalletAnalytics(userId);
+    } catch {
+      return computeWalletAnalytics(await accessService.listAccesses(userId));
+    }
   },
+
   reconcile: reconcileUserWallet,
   claim: claimAccess,
-  notifications: () => useAccessStore.getState().notifications,
 };

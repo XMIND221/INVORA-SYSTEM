@@ -1,33 +1,69 @@
 import { useEffect } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useParams, useSearchParams } from 'react-router-dom';
 import { ArrowUpRight } from 'lucide-react';
 import { lovableTicketPurchase } from '@/lib/constants';
-import { getOrganizerEvent } from '@/integration/lovable/organizer-mock';
 import { vendreService } from '@/services/vendre.service';
+import { partnerService } from '@/services/partner.service';
+import { parseRefFromSearchParams, setStoredPartnerCampaignCode } from '@/lib/partner-attribution';
 import { isTicketTypePurchasable } from '@/features/engines/vendre.engine';
 import { TicketingStatusBadge } from '@/components/lovable/TicketingStatusBadge';
+import { usePublicEventMeta } from '@/hooks/usePublicEventMeta';
+import { useEventTicketTypes } from '@/hooks/useEventTicketTypes';
+import { LoadingPage, NetworkErrorState, NotFoundState } from '@/components/lovable/ui-states';
 
 export default function PublicTicketingPage() {
   const { eventId } = useParams<{ eventId: string }>();
-  const event = eventId ? getOrganizerEvent(eventId) : undefined;
+  const [searchParams] = useSearchParams();
+  const { data: event, isLoading, isError } = usePublicEventMeta(eventId);
+  const {
+    data: catalog,
+    isLoading: typesLoading,
+    isError: typesError,
+    refetch,
+  } = useEventTicketTypes(eventId);
 
   useEffect(() => {
-    if (eventId) {
-      vendreService.initEvent(eventId);
-      vendreService.recordPageView(eventId);
-    }
+    if (eventId) void vendreService.recordPageView(eventId);
   }, [eventId]);
 
-  if (!event || event.universe !== 'vendre') {
+  useEffect(() => {
+    const ref = parseRefFromSearchParams(searchParams);
+    if (!ref || !eventId) return;
+    void partnerService.recordClick(ref, eventId).then((r) => {
+      setStoredPartnerCampaignCode(r.campaignCode);
+      void partnerService.recordOpen(r.campaignCode);
+    });
+  }, [eventId, searchParams]);
+
+  if (isLoading || typesLoading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center px-6">
-        <p className="text-muted-foreground">Billetterie introuvable.</p>
+      <div className="min-h-screen bg-background">
+        <LoadingPage />
       </div>
     );
   }
 
-  const status = vendreService.getTicketingStatus(eventId!);
-  const types = vendreService.listTicketTypes(eventId!);
+  if (isError || typesError) {
+    return (
+      <div className="min-h-screen bg-background px-6 flex items-center">
+        <NetworkErrorState
+          message="Impossible de charger la billetterie."
+          onRetry={() => void refetch()}
+        />
+      </div>
+    );
+  }
+
+  if (!event || event.universe !== 'vendre') {
+    return (
+      <div className="min-h-screen bg-background">
+        <NotFoundState title="Billetterie introuvable" backTo="/" backLabel="Accueil" />
+      </div>
+    );
+  }
+
+  const status = catalog?.status ?? 'draft';
+  const types = catalog?.types ?? [];
 
   return (
     <div className="min-h-screen bg-background pb-12">
@@ -49,39 +85,45 @@ export default function PublicTicketingPage() {
         <p className="text-sm text-muted-foreground mt-4 leading-relaxed">{event.description}</p>
 
         <p className="eyebrow mt-8 mb-3">Billets disponibles</p>
-        <ul className="space-y-3">
-          {types.map((t) => {
-            const ok = isTicketTypePurchasable(t, status);
-            return (
-              <li key={t.id} className="p-4 rounded-2xl bg-surface border border-border">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <p className="font-medium">{t.name}</p>
-                    <p className="text-xs text-muted-foreground mt-1">{t.description}</p>
+        {types.length === 0 ? (
+          <p className="text-sm text-muted-foreground p-4 border border-dashed border-border rounded-2xl">
+            Aucun type de billet publié pour cet événement.
+          </p>
+        ) : (
+          <ul className="space-y-3">
+            {types.map((t) => {
+              const ok = isTicketTypePurchasable(t, status);
+              return (
+                <li key={t.id} className="p-4 rounded-2xl bg-surface border border-border">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <p className="font-medium">{t.name}</p>
+                      <p className="text-xs text-muted-foreground mt-1">{t.description}</p>
+                    </div>
+                    <p className="font-mono text-sm">
+                      {t.priceFcfa === 0 ? 'Gratuit' : `${t.priceFcfa.toLocaleString('fr-FR')} FCFA`}
+                    </p>
                   </div>
-                  <p className="font-mono text-sm">
-                    {t.priceFcfa === 0 ? 'Gratuit' : `${t.priceFcfa.toLocaleString('fr-FR')} FCFA`}
+                  <p className="text-[10px] text-muted-foreground mt-2">
+                    {t.quantity === null
+                      ? 'Stock illimité'
+                      : `${Math.max(0, t.quantity - t.soldCount)} places restantes`}
                   </p>
-                </div>
-                <p className="text-[10px] text-muted-foreground mt-2">
-                  {t.quantity === null
-                    ? 'Stock illimité'
-                    : `${t.quantity - t.soldCount} places restantes`}
-                </p>
-                {ok && (
-                  <Link
-                    to={`${lovableTicketPurchase(eventId!)}?type=${t.id}`}
-                    onClick={() => vendreService.recordCartAdd(eventId!)}
-                    className="mt-4 w-full py-3 bg-primary text-primary-foreground rounded-xl text-sm font-medium flex items-center justify-center gap-2"
-                  >
-                    Acheter
-                    <ArrowUpRight className="size-4" />
-                  </Link>
-                )}
-              </li>
-            );
-          })}
-        </ul>
+                  {ok && eventId && (
+                    <Link
+                      to={`${lovableTicketPurchase(eventId)}?type=${t.id}`}
+                      onClick={() => void vendreService.recordCartAdd(eventId)}
+                      className="mt-3 inline-flex items-center gap-1 text-[10px] uppercase tracking-[0.2em] text-primary"
+                    >
+                      Acheter
+                      <ArrowUpRight className="size-3" />
+                    </Link>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+        )}
       </div>
     </div>
   );

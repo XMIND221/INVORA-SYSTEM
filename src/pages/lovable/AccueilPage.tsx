@@ -15,8 +15,15 @@ import { NextActionCard } from '@/components/lovable/NextActionCard';
 import { UniverseCard } from '@/components/lovable/UniverseCard';
 import { OrganizerJourneyStrip } from '@/components/lovable/OrganizerJourneyStrip';
 import { ROLE_INTENT, WALLET_COPY } from '@/integration/lovable/product-copy';
-import { ORGANIZER_MOCK_EVENTS } from '@/integration/lovable/organizer-mock';
 import { useRole } from '@/integration/lovable/use-role';
+import { useOrganizerEvents } from '@/hooks/useOrganizerEvents';
+import { useAuth } from '@/hooks/useAuth';
+import {
+  EmptyState,
+  LoadingPage,
+  NetworkErrorState,
+  PermissionDeniedState,
+} from '@/components/lovable/ui-states';
 
 export default function AccueilPage() {
   const role = useRole();
@@ -28,9 +35,42 @@ export default function AccueilPage() {
 
 function OrganizerHome() {
   const intent = ROLE_INTENT.organisateur;
-  const flagship = ORGANIZER_MOCK_EVENTS[0]!;
-  const totalScans = ORGANIZER_MOCK_EVENTS.reduce((s, e) => s + e.metrics.scans, 0);
-  const totalRevenue = ORGANIZER_MOCK_EVENTS.reduce((s, e) => s + e.metrics.revenueEur, 0);
+  const { profile, isAuthenticated, isLoading: authLoading } = useAuth();
+  const { events, isLoading, isError, error, refetch } = useOrganizerEvents();
+
+  const flagship = events[0];
+  const inviterEvent = events.find((e) => e.universe === 'inviter');
+  const vendreEvent = events.find((e) => e.universe === 'vendre');
+  const totalScans = events.reduce((s, e) => s + e.metrics.scans, 0);
+  const totalRevenue = events.reduce((s, e) => s + e.metrics.revenueEur, 0);
+  const displayName = profile?.full_name?.split(' ')[0] ?? 'Organisateur';
+
+  if (authLoading || isLoading) {
+    return (
+      <div className="pb-4">
+        <RoleContextBar location="Tableau de bord" />
+        <LoadingPage />
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return (
+      <div className="pb-4">
+        <RoleContextBar location="Tableau de bord" />
+        <PermissionDeniedState />
+      </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <div className="pb-4">
+        <RoleContextBar location="Tableau de bord" />
+        <NetworkErrorState message={error?.message ?? 'Erreur'} onRetry={() => void refetch()} />
+      </div>
+    );
+  }
 
   return (
     <div className="pb-4">
@@ -42,24 +82,45 @@ function OrganizerHome() {
             <>
               Bonjour,
               <br />
-              <span className="font-serif italic">Marc.</span>
+              <span className="font-serif italic">{displayName}.</span>
             </>
           }
           description="Créer · Configurer · Publier · Gérer · Analyser — sans vous perdre."
         />
 
-        <OrganizerJourneyStrip currentStep={flagship.journeyStep} />
+        {events.length === 0 ? (
+          <EmptyState
+            title="Aucune expérience"
+            description="Créez et publiez votre première expérience. Elle sera stockée dans Supabase."
+            ctaLabel="Créer"
+            ctaTo={LOVABLE_ROUTES.creer}
+          />
+        ) : (
+          <>
+            <OrganizerJourneyStrip currentStep={flagship?.journeyStep ?? 0} />
 
-        <NextActionCard
-          title="Distribuer vos invitations"
-          description={`${flagship.title} · ${flagship.universe === 'inviter' ? 'INVITER' : 'VENDRE'} · centre de contrôle`}
-          to={lovableEventHub(flagship.id)}
-          cta="Ouvrir le pilotage"
-        />
+            {flagship ? (
+              <NextActionCard
+                title="Piloter votre expérience"
+                description={`${flagship.title} · ${flagship.universe === 'inviter' ? 'INVITER' : 'VENDRE'}`}
+                to={lovableEventHub(flagship.id)}
+                cta="Ouvrir le pilotage"
+              />
+            ) : null}
 
-        <p className="eyebrow mb-3">Vos deux univers</p>
-        <UniverseCard universe="inviter" currentStep={2} />
-        <UniverseCard universe="vendre" currentStep={0} />
+            <p className="eyebrow mb-3">Vos univers</p>
+            <UniverseCard
+              universe="inviter"
+              currentStep={inviterEvent?.universeFlowStep ?? 0}
+              eventId={inviterEvent?.id}
+            />
+            <UniverseCard
+              universe="vendre"
+              currentStep={vendreEvent?.universeFlowStep ?? 0}
+              eventId={vendreEvent?.id}
+            />
+          </>
+        )}
 
         <Link
           to={LOVABLE_ROUTES.creer}
@@ -69,12 +130,14 @@ function OrganizerHome() {
           <ArrowUpRight className="size-4" />
         </Link>
 
-        <Link
-          to={lovableEventAnalytics(flagship.id)}
-          className="block text-center text-[10px] uppercase tracking-[0.2em] text-muted-foreground mb-2"
-        >
-          Voir les analytics globales
-        </Link>
+        {flagship ? (
+          <Link
+            to={lovableEventAnalytics(flagship.id)}
+            className="block text-center text-[10px] uppercase tracking-[0.2em] text-muted-foreground mb-2"
+          >
+            Analytics · {flagship.title}
+          </Link>
+        ) : null}
         <Link
           to={lovableFinance()}
           className="block text-center text-[10px] uppercase tracking-[0.2em] text-muted-foreground mb-6"
@@ -82,14 +145,16 @@ function OrganizerHome() {
           Finance · solde & retraits
         </Link>
 
-        <div className="grid grid-cols-3 gap-3 py-4 border-t border-border">
-          <Stat
-            label="Revenus"
-            value={totalRevenue > 0 ? `${(totalRevenue / 1000).toFixed(1)}k€` : '—'}
-          />
-          <Stat label="Accès" value={String(flagship.metrics.accesses)} />
-          <Stat label="Scans" value={String(totalScans)} />
-        </div>
+        {events.length > 0 ? (
+          <div className="grid grid-cols-3 gap-3 py-4 border-t border-border">
+            <Stat
+              label="Revenus"
+              value={totalRevenue > 0 ? `${(totalRevenue / 1000).toFixed(1)}k€` : '—'}
+            />
+            <Stat label="Événements" value={String(events.length)} />
+            <Stat label="Scans" value={String(totalScans)} />
+          </div>
+        ) : null}
       </div>
     </div>
   );

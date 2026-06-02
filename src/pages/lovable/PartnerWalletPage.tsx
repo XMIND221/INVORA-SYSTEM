@@ -4,13 +4,23 @@ import { LOVABLE_ROUTES, lovablePartnerWithdrawals } from '@/lib/constants';
 import { PageHeader } from '@/components/lovable/PageHeader';
 import { RoleContextBar } from '@/components/lovable/RoleContextBar';
 import { Stat } from '@/components/lovable/Stat';
-import { partnerService } from '@/services/partner.service';
-import { usePartnerStore } from '@/store/partner.store';
 import { WITHDRAWAL_STATUS_LABEL } from '@/features/engines/partner.engine';
+import { usePartnerDashboard, usePartnerWithdrawals } from '@/hooks/usePartnerDashboard';
+import { LoadingPage } from '@/components/lovable/ui-states';
 
 export default function PartnerWalletPage() {
-  const wallet = partnerService.walletSummary();
-  const withdrawals = usePartnerStore((s) => s.withdrawals);
+  const { data, isLoading } = usePartnerDashboard();
+  const partnerId = data?.profile?.id;
+  const { data: withdrawals = [] } = usePartnerWithdrawals(partnerId);
+  const wallet = data?.wallet ?? { availableFcfa: 0, pendingFcfa: 0, withdrawnFcfa: 0 };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background">
+        <LoadingPage />
+      </div>
+    );
+  }
 
   return (
     <div className="pb-4">
@@ -33,7 +43,7 @@ export default function PartnerWalletPage() {
               <span className="font-serif italic">+ VENDRE.</span>
             </>
           }
-          description="Commissions unifiées — retrait unique."
+          description="Commissions unifiées — retrait unique (Supabase)."
         />
 
         <div className="grid grid-cols-3 gap-2 mt-4">
@@ -44,14 +54,23 @@ export default function PartnerWalletPage() {
 
         <p className="eyebrow mt-6 mb-3">Historique retraits</p>
         <ul className="space-y-2">
-          {withdrawals.map((w) => (
-            <li key={w.id} className="p-4 rounded-xl bg-surface border border-border flex justify-between">
-              <span className="font-mono text-sm">{w.amountFcfa.toLocaleString('fr-FR')} FCFA</span>
-              <span className="text-[9px] uppercase tracking-[0.2em] text-muted-foreground">
-                {WITHDRAWAL_STATUS_LABEL[w.status]}
-              </span>
+          {withdrawals.length === 0 ? (
+            <li className="text-sm text-muted-foreground p-4 border border-dashed border-border rounded-xl text-center">
+              Aucun retrait pour le moment.
             </li>
-          ))}
+          ) : (
+            withdrawals.map((w) => (
+              <li
+                key={w.id}
+                className="p-4 rounded-xl bg-surface border border-border flex justify-between"
+              >
+                <span className="font-mono text-sm">{w.amountFcfa.toLocaleString('fr-FR')} FCFA</span>
+                <span className="text-[9px] uppercase tracking-[0.2em] text-muted-foreground">
+                  {WITHDRAWAL_STATUS_LABEL[w.status]}
+                </span>
+              </li>
+            ))
+          )}
         </ul>
 
         <Link

@@ -7,14 +7,21 @@ import { RoleContextBar } from '@/components/lovable/RoleContextBar';
 import { WALLET_ENGINE_COPY } from '@/integration/lovable/product-copy';
 import { LOVABLE_ROUTES } from '@/lib/constants';
 import { accessService } from '@/services/access.service';
+import { useAuth } from '@/hooks/useAuth';
 
 export default function WalletSearchPage() {
+  const { user } = useAuth();
   const [query, setQuery] = useState('');
-  const [hits, setHits] = useState(() => accessService.search(''));
+  const [hits, setHits] = useState<Awaited<ReturnType<typeof accessService.search>>>([]);
 
-  function onSubmit(e: React.FormEvent) {
+  async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setHits(accessService.search(query));
+    if (!user?.id || !query.trim()) {
+      setHits([]);
+      return;
+    }
+    const results = await accessService.search(query, user.id);
+    setHits(results);
   }
 
   return (
@@ -29,14 +36,18 @@ export default function WalletSearchPage() {
           Wallet
         </Link>
         <PageHeader eyebrow="Wallet" title="Recherche" description={WALLET_ENGINE_COPY.searchDesc} />
-        <form onSubmit={onSubmit} className="flex gap-2 mb-6">
+        <form onSubmit={(e) => void onSubmit(e)} className="flex gap-2 mb-6">
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Nom, téléphone, code, événement…"
-            className="flex-1 px-4 py-3 bg-surface border border-border rounded-xl text-sm"
+            placeholder="Nom, téléphone, code…"
+            className="flex-1 p-3 border border-border rounded-lg bg-surface text-sm"
           />
-          <button type="submit" className="px-4 rounded-xl bg-primary text-primary-foreground">
+          <button
+            type="submit"
+            className="px-4 py-3 bg-primary text-primary-foreground rounded-lg"
+            aria-label="Rechercher"
+          >
             <Search className="size-4" />
           </button>
         </form>
@@ -45,9 +56,6 @@ export default function WalletSearchPage() {
             <AccessPassCard key={`${a.universe}-${a.accessId}`} access={a} />
           ))}
         </ul>
-        {query && hits.length === 0 && (
-          <p className="text-sm text-muted-foreground text-center">Aucun résultat.</p>
-        )}
       </div>
     </div>
   );

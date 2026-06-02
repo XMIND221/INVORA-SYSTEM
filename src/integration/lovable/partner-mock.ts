@@ -1,3 +1,4 @@
+/** @deprecated Production : partner.service.ts + Supabase. Tests : __fixtures__/partner-mock.fixture.ts */
 import type { PartnerCampaign, PartnerProfile, PartnerWithdrawalRequest } from '@/types/partner';
 import { buildCampaignCode, buildPartnerShareLink } from '@/features/engines/partner.engine';
 

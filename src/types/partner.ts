@@ -67,6 +67,7 @@ export interface PartnerAnalyticsSnapshot {
   sales: number;
   commissionFcfa: number;
   campaigns: number;
+  conversionRate?: number;
 }
 
 export interface PartnerRayonnerPhase {

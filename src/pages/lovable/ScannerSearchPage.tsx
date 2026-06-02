@@ -7,10 +7,12 @@ import { guestDisplayName } from '@/features/engines/scanner.engine';
 import { SCANNER_ENGINE_COPY } from '@/integration/lovable/product-copy';
 import { LOVABLE_ROUTES } from '@/lib/constants';
 import { scannerService } from '@/services/scanner.service';
+import { useInvalidateScanner, useScannerSession } from '@/hooks/useScannerData';
 import type { ScannerSearchHit } from '@/types/scanner';
 
 export default function ScannerSearchPage() {
-  const session = scannerService.getSession();
+  const { data: session } = useScannerSession();
+  const invalidate = useInvalidateScanner();
   const [query, setQuery] = useState('');
   const [hits, setHits] = useState<ScannerSearchHit[]>([]);
   const [loading, setLoading] = useState(false);
@@ -19,6 +21,7 @@ export default function ScannerSearchPage() {
     e.preventDefault();
     if (!query.trim()) return;
     setLoading(true);
+    if (!session?.eventId) return;
     try {
       const results = await scannerService.search(session.eventId, query);
       setHits(results);
@@ -28,11 +31,13 @@ export default function ScannerSearchPage() {
   }
 
   async function validateHit(hit: ScannerSearchHit) {
+    if (!session?.eventId) return;
     await scannerService.validateScan({
       eventId: session.eventId,
       passReference: hit.passReference,
       gateCode: session.gateCode,
     });
+    invalidate(session.eventId);
   }
 
   return (
@@ -47,7 +52,7 @@ export default function ScannerSearchPage() {
           Scanner
         </Link>
         <PageHeader
-          eyebrow={session.eventTitle}
+          eyebrow={session?.eventTitle ?? 'Événement'}
           title="Recherche"
           description={SCANNER_ENGINE_COPY.searchDesc}
         />

@@ -12,8 +12,10 @@ import {
   lovablePartnerWithdrawals,
 } from '@/lib/constants';
 import { PARTNER_ENGINE_COPY } from '@/integration/lovable/product-copy';
-import { partnerService } from '@/services/partner.service';
 import { useRole } from '@/integration/lovable/use-role';
+import { usePartnerDashboard } from '@/hooks/usePartnerDashboard';
+import { LoadingPage, PermissionDeniedState } from '@/components/lovable/ui-states';
+import { useAuth } from '@/hooks/useAuth';
 
 export default function PartenairesPage() {
   const role = useRole();
@@ -22,10 +24,35 @@ export default function PartenairesPage() {
 }
 
 function PartnerDashboard() {
-  const profile = partnerService.getProfile();
-  const campaigns = partnerService.listCampaigns();
-  const analytics = partnerService.analytics();
-  const wallet = partnerService.walletSummary();
+  const { isAuthenticated } = useAuth();
+  const { data, isLoading, isError } = usePartnerDashboard();
+
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen bg-background">
+        <PermissionDeniedState description="Connectez-vous avec un compte partenaire." />
+      </div>
+    );
+  }
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background">
+        <LoadingPage />
+      </div>
+    );
+  }
+
+  if (isError || !data?.profile) {
+    return (
+      <div className="px-6 py-12 text-center text-muted-foreground">
+        Profil partenaire indisponible. Contactez INVORA pour activer votre compte.
+      </div>
+    );
+  }
+
+  const { profile, campaigns, analytics, wallet } = data;
+  const top = campaigns.find((c) => c.isActive) ?? campaigns[0];
 
   return (
     <div className="pb-4">
@@ -49,12 +76,14 @@ function PartnerDashboard() {
 
         <PartnerWorkflowStrip currentStep={2} />
 
-        <NextActionCard
-          title="Partager Showcase 06"
-          description="Media kit prêt · lien traçable · VENDRE"
-          to={lovablePartnerCampaign('pc-showcase')}
-          cta="Ouvrir la campagne"
-        />
+        {top ? (
+          <NextActionCard
+            title={`Partager ${top.eventTitle}`}
+            description={`${top.universe.toUpperCase()} · ${top.conversions} conversions`}
+            to={lovablePartnerCampaign(top.id)}
+            cta="Ouvrir la campagne"
+          />
+        ) : null}
 
         <div className="grid grid-cols-2 gap-2 my-4">
           <Stat label="Disponible" value={`${wallet.availableFcfa.toLocaleString('fr-FR')} F`} />
@@ -76,7 +105,7 @@ function PartnerDashboard() {
                   <div>
                     <p className="text-sm font-medium">{c.eventTitle}</p>
                     <p className="text-[10px] text-muted-foreground mt-0.5">
-                      {c.universe.toUpperCase()} · {c.conversions} conv.
+                      {c.universe.toUpperCase()} · {c.conversions} conv. · {c.clicks} clics
                     </p>
                   </div>
                   <ArrowUpRight className="size-4 text-muted-foreground" />
@@ -85,23 +114,14 @@ function PartnerDashboard() {
             ))}
         </ul>
 
-        <div className="grid grid-cols-2 gap-2">
-          <Link
-            to={lovablePartnerWallet()}
-            className="py-3 text-center border border-border rounded-xl text-[10px] uppercase tracking-[0.2em]"
-          >
+        <div className="flex gap-4 justify-center text-[10px] uppercase tracking-[0.18em]">
+          <Link to={lovablePartnerWallet()} className="text-muted-foreground hover:text-foreground">
             Wallet
           </Link>
-          <Link
-            to={lovablePartnerWithdrawals()}
-            className="py-3 text-center border border-border rounded-xl text-[10px] uppercase tracking-[0.2em]"
-          >
+          <Link to={lovablePartnerWithdrawals()} className="text-muted-foreground hover:text-foreground">
             Retraits
           </Link>
-          <Link
-            to={lovablePartnerAnalytics()}
-            className="col-span-2 py-3 text-center border border-border rounded-xl text-[10px] uppercase tracking-[0.2em]"
-          >
+          <Link to={lovablePartnerAnalytics()} className="text-muted-foreground hover:text-foreground">
             Analytics
           </Link>
         </div>
@@ -112,24 +132,8 @@ function PartnerDashboard() {
 
 function OrganizerPartnersView() {
   return (
-    <div className="pb-4">
-      <RoleContextBar location="Partenaires" />
-      <div className="px-6">
-        <PageHeader
-          eyebrow="Organisateur"
-          title={
-            <>
-              Vos
-              <br />
-              <span className="font-serif italic">partenaires.</span>
-            </>
-          }
-          description="Invitez des distributeurs — commissions calculées côté serveur."
-        />
-        <div className="p-5 bg-surface border border-border rounded-2xl text-sm text-muted-foreground">
-          {PARTNER_ENGINE_COPY.organizerHint}
-        </div>
-      </div>
+    <div className="px-6 py-12 text-center text-muted-foreground text-sm">
+      Espace organisateur — invitez des partenaires depuis le hub événement.
     </div>
   );
 }

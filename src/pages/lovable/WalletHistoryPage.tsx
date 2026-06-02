@@ -6,9 +6,25 @@ import { ACCESS_STATUS_LABEL } from '@/features/engines/access.engine';
 import { WALLET_ENGINE_COPY } from '@/integration/lovable/product-copy';
 import { LOVABLE_ROUTES } from '@/lib/constants';
 import { accessService } from '@/services/access.service';
+import { useAuth } from '@/hooks/useAuth';
+import { useQuery } from '@tanstack/react-query';
+import { LoadingPage } from '@/components/lovable/ui-states';
 
 export default function WalletHistoryPage() {
-  const history = accessService.history();
+  const { user } = useAuth();
+  const { data: history = [], isLoading } = useQuery({
+    queryKey: ['wallet-history', user?.id],
+    queryFn: () => (user?.id ? accessService.history(user.id) : Promise.resolve([])),
+    enabled: !!user?.id,
+  });
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background">
+        <LoadingPage />
+      </div>
+    );
+  }
 
   return (
     <div className="pb-4">

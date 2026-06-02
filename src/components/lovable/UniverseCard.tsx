@@ -8,14 +8,18 @@ import { FlowStrip } from './FlowStrip';
 interface UniverseCardProps {
   universe: EventUniverse;
   currentStep?: number;
+  eventId?: string;
 }
 
-export function UniverseCard({ universe, currentStep = 0 }: UniverseCardProps) {
+export function UniverseCard({ universe, currentStep = 0, eventId }: UniverseCardProps) {
   const copy = UNIVERSE_COPY[universe];
+  const parcoursTo = eventId
+    ? `${LOVABLE_ROUTES.parcours}?univers=${universe}&event=${eventId}`
+    : `${LOVABLE_ROUTES.parcours}?univers=${universe}`;
 
   return (
     <Link
-      to={`${LOVABLE_ROUTES.parcours}?univers=${universe}`}
+      to={parcoursTo}
       className="block p-4 mb-3 rounded-2xl bg-surface border border-border hover:border-border-strong transition"
     >
       <div className="flex items-start justify-between mb-3">

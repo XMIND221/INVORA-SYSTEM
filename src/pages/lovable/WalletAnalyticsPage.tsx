@@ -5,10 +5,19 @@ import { RoleContextBar } from '@/components/lovable/RoleContextBar';
 import { Stat } from '@/components/lovable/Stat';
 import { WALLET_ENGINE_COPY } from '@/integration/lovable/product-copy';
 import { LOVABLE_ROUTES } from '@/lib/constants';
-import { accessService } from '@/services/access.service';
+import { useWalletAnalytics } from '@/hooks/useWalletAccesses';
+import { LoadingPage } from '@/components/lovable/ui-states';
 
 export default function WalletAnalyticsPage() {
-  const a = accessService.analytics();
+  const { data: a, isLoading } = useWalletAnalytics();
+
+  if (isLoading || !a) {
+    return (
+      <div className="min-h-screen bg-background">
+        <LoadingPage />
+      </div>
+    );
+  }
 
   return (
     <div className="pb-4">

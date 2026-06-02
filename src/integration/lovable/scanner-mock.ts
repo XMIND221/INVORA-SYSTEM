@@ -1,3 +1,4 @@
+/** @deprecated Production : scanner.service.ts + Supabase RPC. Tests uniquement. */
 import type {
   ScannerFieldAnalytics,
   ScannerHistoryEntry,

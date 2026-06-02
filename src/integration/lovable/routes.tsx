@@ -48,9 +48,20 @@ const DesignDiversityPage = lazy(() => import('@/pages/lovable/DesignDiversityPa
 const OrganizerFinancePage = lazy(() => import('@/pages/lovable/OrganizerFinancePage'));
 const FinanceReportsPage = lazy(() => import('@/pages/lovable/FinanceReportsPage'));
 const InviterPricingPage = lazy(() => import('@/pages/lovable/InviterPricingPage'));
+const CheckoutPage = lazy(() => import('@/pages/lovable/CheckoutPage'));
+const PaymentStatusPage = lazy(() => import('@/pages/lovable/PaymentStatusPage'));
 
 function PageFallback() {
-  return <div className="min-h-screen bg-background" aria-busy="true" />;
+  return (
+    <div
+      className="min-h-screen bg-background flex flex-col items-center justify-center gap-3 text-muted-foreground"
+      aria-busy="true"
+      aria-live="polite"
+    >
+      <div className="size-8 rounded-full border border-border border-t-foreground animate-spin" />
+      <p className="text-sm">Chargement…</p>
+    </div>
+  );
 }
 
 const wrap = (el: ReactNode) => (
@@ -68,6 +79,8 @@ export const lovableRoutes: RouteObject[] = [
   },
   { path: '/billetterie/:eventId', element: wrap(<PublicTicketingPage />) },
   { path: '/billetterie/:eventId/acheter', element: wrap(<TicketPurchasePage />) },
+  { path: '/checkout/:attemptId', element: wrap(<CheckoutPage />) },
+  { path: '/paiement/statut/:attemptId', element: wrap(<PaymentStatusPage />) },
   { path: '/ticket/:token', element: wrap(<TicketPublicPage />) },
   { path: '/p/:partnerCode/:eventId', element: wrap(<PartnerRedirectPage />) },
   {
@@ -129,6 +142,6 @@ export const lovableRoutes: RouteObject[] = [
 ];
 
 registerLovableManifest({
-  version: '9.0.0-phase9-finance',
+  version: '11.0.0-phase11f-notifications-engine',
   routes: lovableRoutes,
 });

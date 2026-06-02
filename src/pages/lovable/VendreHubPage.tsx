@@ -1,4 +1,3 @@
-import { useEffect } from 'react';
 import { Link, Navigate } from 'react-router-dom';
 import { ArrowLeft, ArrowUpRight, Ticket, BarChart3, Sparkles } from 'lucide-react';
 import {
@@ -17,15 +16,14 @@ import { TicketingStatusBadge } from '@/components/lovable/TicketingStatusBadge'
 import { Stat } from '@/components/lovable/Stat';
 import { VENDRE_ENGINE_COPY } from '@/integration/lovable/product-copy';
 import { useOrganizerEventParam } from '@/hooks/useOrganizerEvent';
-import { vendreService } from '@/services/vendre.service';
 import { assertVendreUniverse } from '@/features/engines/vendre.engine';
+import { useEventTicketTypes } from '@/hooks/useEventTicketTypes';
+import { useVendreAnalytics } from '@/hooks/useVendreAnalytics';
 
 export default function VendreHubPage() {
   const { eventId, event } = useOrganizerEventParam();
-
-  useEffect(() => {
-    if (eventId) vendreService.initEvent(eventId);
-  }, [eventId]);
+  const { data: catalog } = useEventTicketTypes(eventId);
+  const { data: analytics } = useVendreAnalytics(eventId);
 
   if (!eventId || !event) return <Navigate to={LOVABLE_ROUTES.evenements} replace />;
   try {
@@ -34,8 +32,17 @@ export default function VendreHubPage() {
     return <Navigate to={lovableEventHub(eventId)} replace />;
   }
 
-  const status = vendreService.getTicketingStatus(eventId);
-  const analytics = vendreService.analytics(eventId);
+  const status = catalog?.status ?? 'draft';
+  const a = analytics ?? {
+    pageViews: 0,
+    cartAdds: 0,
+    purchases: 0,
+    conversionRate: 0,
+    ticketsSold: 0,
+    grossRevenueFcfa: 0,
+    organizerRevenueFcfa: 0,
+    invoraCommissionFcfa: 0,
+  };
 
   return (
     <div className="pb-4">
@@ -67,9 +74,9 @@ export default function VendreHubPage() {
         <VendreWorkflowStrip currentStep={status === 'on_sale' ? 3 : 1} />
 
         <div className="grid grid-cols-3 gap-2 mb-4">
-          <Stat label="Vendus" value={String(analytics.ticketsSold)} />
-          <Stat label="CA" value={`${(analytics.grossRevenueFcfa / 1000).toFixed(0)}k`} />
-          <Stat label="Conversion" value={`${analytics.conversionRate}%`} />
+          <Stat label="Vendus" value={String(a.ticketsSold)} />
+          <Stat label="CA" value={`${(a.grossRevenueFcfa / 1000).toFixed(0)}k`} />
+          <Stat label="Conversion" value={`${a.conversionRate}%`} />
         </div>
 
         <p className="text-xs text-muted-foreground mb-4 p-3 border border-border rounded-lg">

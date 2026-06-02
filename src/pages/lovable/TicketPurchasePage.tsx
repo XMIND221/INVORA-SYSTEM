@@ -1,9 +1,12 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import { ArrowLeft } from 'lucide-react';
-import { lovablePublicTicketing, lovableTicketPublic } from '@/lib/constants';
-import { getOrganizerEvent } from '@/integration/lovable/organizer-mock';
+import { ArrowLeft, Loader2 } from 'lucide-react';
+import { lovableCheckout, lovablePublicTicketing } from '@/lib/constants';
+import { usePublicEventMeta } from '@/hooks/usePublicEventMeta';
+import { useEventTicketTypes } from '@/hooks/useEventTicketTypes';
+import { LoadingPage, NotFoundState } from '@/components/lovable/ui-states';
 import { vendreService } from '@/services/vendre.service';
+import { initiateVendreCheckout } from '@/services/payment.service';
 import { validateCheckoutInput } from '@/features/engines/vendre.engine';
 import { PricingBreakdownCard } from '@/components/lovable/PricingBreakdownCard';
 import type { PricingBreakdown, VendreTicketType } from '@/types/vendre';
@@ -12,7 +15,8 @@ export default function TicketPurchasePage() {
   const { eventId } = useParams<{ eventId: string }>();
   const [params] = useSearchParams();
   const navigate = useNavigate();
-  const event = eventId ? getOrganizerEvent(eventId) : undefined;
+  const { data: event, isLoading: eventLoading } = usePublicEventMeta(eventId);
+  const { data: catalog, isLoading: typesLoading } = useEventTicketTypes(eventId);
 
   const [type, setType] = useState<VendreTicketType | null>(null);
   const [qty, setQty] = useState(1);
@@ -21,26 +25,38 @@ export default function TicketPurchasePage() {
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
   const [pricing, setPricing] = useState<PricingBreakdown | null>(null);
+  const [paying, setPaying] = useState(false);
+  const [providerId] = useState('wave');
 
   useEffect(() => {
-    if (!eventId) return;
-    vendreService.initEvent(eventId);
     const typeId = params.get('type');
-    const types = vendreService.listTicketTypes(eventId);
+    const types = catalog?.types ?? [];
     const selected = types.find((t) => t.id === typeId) ?? types[0] ?? null;
     setType(selected);
-  }, [eventId, params]);
+  }, [catalog, params]);
 
   useEffect(() => {
     if (!type) return;
     void vendreService.fetchPricing(type.priceFcfa).then(setPricing);
   }, [type]);
 
-  if (!eventId || !event) {
-    return <div className="min-h-screen bg-background p-6">Événement introuvable.</div>;
+  if (eventLoading || typesLoading) {
+    return (
+      <div className="min-h-screen bg-background">
+        <LoadingPage />
+      </div>
+    );
   }
 
-  const handlePay = () => {
+  if (!eventId || !event) {
+    return (
+      <div className="min-h-screen bg-background">
+        <NotFoundState title="Événement introuvable" />
+      </div>
+    );
+  }
+
+  const handlePay = async () => {
     if (!type) return;
     const input = {
       ticketTypeId: type.id,
@@ -53,10 +69,35 @@ export default function TicketPurchasePage() {
     const check = validateCheckoutInput(input);
     if (!check.valid) return;
 
-    const result = vendreService.checkout(eventId, input);
-    if ('error' in result) return;
-    const ticket = result.tickets[0];
-    if (ticket) navigate(lovableTicketPublic(ticket.accessToken));
+    setPaying(true);
+    const buyerName = `${firstName} ${lastName}`.trim();
+    const initiated = await initiateVendreCheckout({
+      eventId,
+      ticketTypeId: type.id,
+      quantity: qty,
+      buyerName,
+      buyerPhone: phone,
+      buyerEmail: email || undefined,
+      providerId,
+    });
+    setPaying(false);
+
+    if ('error' in initiated) return;
+
+    const back = lovablePublicTicketing(eventId);
+    const qs = new URLSearchParams({
+      universe: 'vendre',
+      amount: String(initiated.amountFcfa),
+      tx: initiated.transactionId,
+      eventId,
+      type: type.id,
+      qty: String(qty),
+      name: buyerName,
+      phone,
+      back,
+    });
+    if (email) qs.set('email', email);
+    navigate(`${lovableCheckout(initiated.paymentAttemptId)}?${qs.toString()}`);
   };
 
   return (
@@ -72,7 +113,7 @@ export default function TicketPurchasePage() {
 
         <h1 className="font-serif italic text-2xl">Finaliser l&apos;achat</h1>
         <p className="text-sm text-muted-foreground mt-1">
-          {type?.name} · {event.title}
+          {type?.name ?? '—'} · {event.title}
         </p>
 
         <div className="mt-6 space-y-3">
@@ -122,16 +163,17 @@ export default function TicketPurchasePage() {
         )}
 
         <p className="text-xs text-muted-foreground mt-4">
-          Paiement simulé Phase 4 — statut passera à <strong>paid</strong> côté serveur avant émission
-          QR.
+          Paiement validé par le fournisseur → émission billet → wallet.
         </p>
 
         <button
           type="button"
-          onClick={handlePay}
-          className="mt-6 w-full py-4 bg-primary text-primary-foreground rounded-2xl text-sm font-medium"
+          onClick={() => void handlePay()}
+          disabled={paying || !type}
+          className="mt-6 w-full py-4 bg-primary text-primary-foreground rounded-2xl text-sm font-medium disabled:opacity-60 inline-flex items-center justify-center gap-2"
         >
-          Payer et recevoir mes billets
+          {paying ? <Loader2 className="size-4 animate-spin" /> : null}
+          Continuer vers le paiement sécurisé
         </button>
       </div>
     </div>

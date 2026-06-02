@@ -5,6 +5,7 @@ export type EventVisibility = (typeof EVENT_VISIBILITY)[number];
 export type EventStatus = (typeof EVENT_STATUS)[number];
 
 export interface ExperienceDraft {
+  eventId?: string;
   title?: string;
   description?: string;
   universe?: EventUniverse;

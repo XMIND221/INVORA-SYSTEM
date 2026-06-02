@@ -45,3 +45,9 @@ export function removeOfflineScan(id: string): void {
 export function pendingOfflineCount(): number {
   return readAll().length;
 }
+
+export function setOfflineServerQueueId(localId: string, serverQueueId: string): void {
+  writeAll(
+    readAll().map((i) => (i.id === localId ? { ...i, serverQueueId } : i)),
+  );
+}

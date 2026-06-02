@@ -13,3 +13,5 @@ export * as walletService from './wallet.service';
 export { accessService, reconcileUserWallet } from './access.service';
 export { designService, buildDesignInputFromEvent } from './design.service';
 export { financeService, fetchInviterPricingQuote, fetchVendrePricingQuote } from './finance.service';
+export * as paymentService from './payment.service';
+export * as checkoutService from './checkout.service';

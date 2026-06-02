@@ -17,7 +17,9 @@ export function ScannerResultOverlay({ display }: { display: ScannerValidationDi
       ) : (
         <X className="size-12 text-destructive mb-3" strokeWidth={2.5} />
       )}
-      <p className="text-white font-serif italic text-3xl mb-2">{ok ? 'Validé' : 'Refusé'}</p>
+      <p className="text-white font-serif italic text-3xl mb-2">
+        {display.displayStatus ?? (ok ? 'VALID' : 'UNKNOWN')}
+      </p>
       <p className="text-white/90 text-lg font-medium">
         {guestDisplayName(display.firstName, display.lastName)}
       </p>

@@ -1,19 +1,35 @@
-import { Link, Navigate, useParams } from 'react-router-dom';
+import { Link, useParams } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import { LOVABLE_ROUTES, lovablePartnerCampaign } from '@/lib/constants';
 import { PageHeader } from '@/components/lovable/PageHeader';
 import { RoleContextBar } from '@/components/lovable/RoleContextBar';
 import { getPartnerRayonnerPhases } from '@/features/engines/partner.engine';
-import { partnerService } from '@/services/partner.service';
-import { getOrganizerEvent } from '@/integration/lovable/organizer-mock';
+import { useOrganizerEventParam } from '@/hooks/useOrganizerEvent';
+import { usePartnerDashboard } from '@/hooks/usePartnerDashboard';
+import { LoadingPage, NotFoundState } from '@/components/lovable/ui-states';
 
 export default function PartnerRayonnerPage() {
   const { eventId } = useParams<{ eventId: string }>();
-  const campaign = partnerService.listCampaigns().find((c) => c.eventId === eventId);
-  const event = eventId ? getOrganizerEvent(eventId) : undefined;
+  const { event, isLoading, isError } = useOrganizerEventParam();
+  const { data: partnerData } = usePartnerDashboard();
+  const campaign = partnerData?.campaigns.find((c) => c.eventId === eventId);
   const phases = getPartnerRayonnerPhases();
 
-  if (!eventId || !event) return <Navigate to={LOVABLE_ROUTES.partenaires} replace />;
+  if (isLoading) {
+    return (
+      <div className="pb-4">
+        <LoadingPage />
+      </div>
+    );
+  }
+
+  if (!eventId || isError || !event) {
+    return (
+      <div className="pb-4">
+        <NotFoundState title="Événement introuvable" backTo={LOVABLE_ROUTES.partenaires} backLabel="Partenaires" />
+      </div>
+    );
+  }
 
   return (
     <div className="pb-4">

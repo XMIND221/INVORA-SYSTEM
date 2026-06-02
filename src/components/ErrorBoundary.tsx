@@ -29,8 +29,22 @@ export class ErrorBoundary extends Component<Props, State> {
     if (this.state.hasError) {
       return (
         this.props.fallback ?? (
-          <div role="alert" data-invora="error-boundary">
-            Une erreur est survenue. Rechargez l&apos;application.
+          <div
+            role="alert"
+            data-invora="error-boundary"
+            className="min-h-screen flex items-center justify-center bg-background px-6 text-foreground"
+          >
+            <div className="max-w-md text-center">
+              <p className="eyebrow mb-3">Erreur</p>
+              <p className="text-sm text-muted-foreground">
+                Une erreur est survenue. Rechargez l&apos;application.
+              </p>
+              {this.state.error?.message ? (
+                <pre className="mt-4 text-left text-xs text-muted-foreground border border-border rounded-lg p-3 overflow-auto">
+                  {this.state.error.message}
+                </pre>
+              ) : null}
+            </div>
           </div>
         )
       );

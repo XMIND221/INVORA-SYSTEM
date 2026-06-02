@@ -1,3 +1,4 @@
+/** @deprecated Production : RPC Supabase. Conservé pour tests unitaires locaux uniquement. */
 import { guestDisplayName } from '@/features/engines/scanner.engine';
 import type {
   ScannerFieldAnalytics,

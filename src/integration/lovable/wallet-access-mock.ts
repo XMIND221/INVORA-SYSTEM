@@ -1,3 +1,4 @@
+/** @deprecated Production : notification.service + get_notification_preferences. Tests uniquement. */
 import type { WalletNotificationPrep } from '@/types/access';
 
 export const MOCK_WALLET_USER_ID = 'demo-user';

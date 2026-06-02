@@ -1,6 +1,8 @@
 import { useState } from 'react';
-import { Link, Navigate } from 'react-router-dom';
+import { Link, Navigate, useNavigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
+import { lovableCheckout } from '@/lib/constants';
+import { initiateInviterCheckout } from '@/services/payment.service';
 import { InviterPricingCard } from '@/components/lovable/InviterPricingCard';
 import { PageHeader } from '@/components/lovable/PageHeader';
 import { RoleContextBar } from '@/components/lovable/RoleContextBar';
@@ -10,8 +12,10 @@ import { useOrganizerEventParam } from '@/hooks/useOrganizerEvent';
 import { inviterService } from '@/services/inviter.service';
 
 export default function InviterPricingPage() {
+  const navigate = useNavigate();
   const { eventId, event } = useOrganizerEventParam();
   const [addQty, setAddQty] = useState(12);
+  const [paying, setPaying] = useState(false);
   const guests = eventId ? inviterService.listGuests(eventId) : [];
   const existing = guests.length;
 
@@ -51,6 +55,31 @@ export default function InviterPricingPage() {
           />
         </label>
         <InviterPricingCard quantity={addQty} existingCount={existing} />
+        <button
+          type="button"
+          disabled={paying}
+          onClick={async () => {
+            if (!eventId) return;
+            setPaying(true);
+            const result = await initiateInviterCheckout(eventId, addQty, 'wave');
+            setPaying(false);
+            if ('error' in result) return;
+            const qs = new URLSearchParams({
+              universe: 'inviter',
+              amount: String(result.amountFcfa),
+              tx: result.transactionId,
+              eventId,
+              back: lovableEventInviter(eventId),
+            });
+            navigate(`${lovableCheckout(result.paymentAttemptId)}?${qs.toString()}`);
+          }}
+          className="mt-6 w-full py-4 rounded-2xl bg-primary text-primary-foreground text-sm font-medium disabled:opacity-60"
+        >
+          {paying ? 'Préparation…' : 'Payer avant distribution'}
+        </button>
+        <p className="text-[11px] text-muted-foreground mt-3 text-center">
+          Aucune distribution avant validation du paiement (Phase 10).
+        </p>
       </div>
     </div>
   );

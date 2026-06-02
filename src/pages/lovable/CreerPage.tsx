@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
   ArrowRight,
@@ -25,28 +25,26 @@ import {
   UNIVERSE_COPY,
 } from '@/integration/lovable/product-copy';
 import { validatePublication } from '@/features/engines/publication.engine';
+import {
+  createExperienceFromDraft,
+  publishExperienceFromDraft,
+} from '@/features/event-engine';
+import { useAuth } from '@/hooks/useAuth';
 import { useEventStore } from '@/store/event.store';
-import type { EventUniverse, EventVisibility } from '@/types/event';
-
-const DEFAULT_DRAFT = {
-  title: 'Obsidian Gala',
-  dateLabel: '24 DÉC',
-  location: 'Paris, FR',
-  description: '',
-  universe: 'inviter' as EventUniverse,
-  visibility: 'private' as EventVisibility,
-  capacity: 600,
-};
+import {
+  LoadingButton,
+  NetworkErrorState,
+  PermissionDeniedState,
+} from '@/components/lovable/ui-states';
+import type { EventUniverse } from '@/types/event';
 
 export default function CreerPage() {
   const navigate = useNavigate();
-  const { draft, studioStep, patchDraft, setStudioStep, resetStudio } = useEventStore();
-
-  useEffect(() => {
-    if (!draft.title) {
-      patchDraft(DEFAULT_DRAFT);
-    }
-  }, [draft.title, patchDraft]);
+  const { user, isAuthenticated, isLoading: authLoading } = useAuth();
+  const { draft, studioStep, patchDraft, setStudioStep, resetStudio, setActiveEvent } =
+    useEventStore();
+  const [publishing, setPublishing] = useState(false);
+  const [publishError, setPublishError] = useState<string | null>(null);
 
   const stepMeta = STUDIO_STEP_COPY[studioStep - 1] ?? STUDIO_STEP_COPY[0];
   const universe = (draft.universe ?? 'inviter') as EventUniverse;
@@ -69,16 +67,45 @@ export default function CreerPage() {
     startsAt: draft.startsAt ?? draft.dateLabel,
   });
 
-  const handlePublish = () => {
-    if (!publishCheck.canPublish) return;
-    const slug =
-      title
-        .toLowerCase()
-        .replace(/[^a-z0-9]+/g, '-')
-        .replace(/^-|-$/g, '') || 'nouvelle-experience';
-    resetStudio();
-    navigate(lovableEventHub(slug));
+  const handlePublish = async () => {
+    if (!publishCheck.canPublish || !user?.id) return;
+    setPublishing(true);
+    setPublishError(null);
+    try {
+      let eventId = draft.eventId;
+      if (!eventId) {
+        const created = await createExperienceFromDraft(user.id, draft);
+        eventId = created.id;
+        patchDraft({ eventId });
+        setActiveEvent(created);
+      }
+      const published = await publishExperienceFromDraft(eventId, draft);
+      resetStudio();
+      navigate(lovableEventHub(published.id));
+    } catch (e) {
+      setPublishError(e instanceof Error ? e.message : 'Publication impossible');
+    } finally {
+      setPublishing(false);
+    }
   };
+
+  if (authLoading) {
+    return (
+      <div className="pb-4">
+        <RoleContextBar location="Studio · Créer" />
+        <LoadingButton>Chargement…</LoadingButton>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated || !user) {
+    return (
+      <div className="pb-4">
+        <RoleContextBar location="Studio · Créer" />
+        <PermissionDeniedState />
+      </div>
+    );
+  }
 
   return (
     <div className="pb-4">
@@ -104,11 +131,19 @@ export default function CreerPage() {
 
         <StudioStepper current={studioStep} />
 
+        {publishError ? (
+          <div className="mb-4">
+            <NetworkErrorState message={publishError} onRetry={() => void handlePublish()} />
+          </div>
+        ) : null}
+
         {studioStep === 1 && (
           <>
             <button
               type="button"
-              className="w-full aspect-[16/9] mb-5 rounded-2xl border border-dashed border-border-strong bg-surface flex flex-col items-center justify-center gap-2"
+              className="w-full aspect-[16/9] mb-5 rounded-2xl border border-dashed border-border-strong bg-surface flex flex-col items-center justify-center gap-2 opacity-60"
+              disabled
+              title="Upload couverture — Phase 11B"
             >
               <Camera className="size-5 text-muted-foreground" strokeWidth={1.5} />
               <span className="text-xs text-muted-foreground">Photo de couverture</span>
@@ -119,6 +154,7 @@ export default function CreerPage() {
                   value={title}
                   onChange={(e) => patchDraft({ title: e.target.value })}
                   className="w-full bg-transparent text-base font-medium outline-none"
+                  placeholder="Nom de votre expérience"
                 />
               </StudioField>
               <StudioField icon={<Calendar className="size-4" />} label="Date">
@@ -126,6 +162,7 @@ export default function CreerPage() {
                   value={dateLabel}
                   onChange={(e) => patchDraft({ dateLabel: e.target.value })}
                   className="w-full bg-transparent text-base font-medium outline-none"
+                  placeholder="ex. 24 DÉC 2026"
                 />
               </StudioField>
               <StudioField icon={<MapPin className="size-4" />} label="Lieu">
@@ -133,6 +170,7 @@ export default function CreerPage() {
                   value={location}
                   onChange={(e) => patchDraft({ location: e.target.value })}
                   className="w-full bg-transparent text-base font-medium outline-none"
+                  placeholder="Ville, pays"
                 />
               </StudioField>
               <StudioField icon={<AlignLeft className="size-4" />} label="Description">
@@ -213,9 +251,6 @@ export default function CreerPage() {
                 className="w-full bg-transparent text-base font-medium outline-none font-mono"
               />
             </StudioField>
-            <p className="text-[10px] text-muted-foreground">
-              Paiements, Stripe et retraits — hors scope Phase 2.
-            </p>
           </div>
         )}
 
@@ -223,7 +258,7 @@ export default function CreerPage() {
           <DesignEnginePreview
             universe={universe}
             eventTitle={title || 'Votre expérience'}
-            eventId="studio-draft"
+            eventId={draft.eventId ?? 'studio-draft'}
             description={draft.description}
             dateLabel={dateLabel}
             location={location}
@@ -243,8 +278,7 @@ export default function CreerPage() {
               </ul>
             )}
             <p className="text-xs text-muted-foreground mt-4">
-              La publication met l’expérience en statut <strong>Publié</strong>. Pilotage complet
-              depuis le centre de contrôle.
+              Publication enregistrée dans Supabase. Pilotage depuis le centre de contrôle.
             </p>
           </div>
         )}
@@ -252,7 +286,7 @@ export default function CreerPage() {
         {studioStep < 4 && (
           <>
             <p className="eyebrow mt-4 mb-3">Aperçu</p>
-            <EventCard title={title} date={dateLabel} location={location} tag={copy.badge} />
+            <EventCard title={title || '…'} date={dateLabel} location={location} tag={copy.badge} />
           </>
         )}
 
@@ -261,6 +295,7 @@ export default function CreerPage() {
             <button
               type="button"
               onClick={goBack}
+              disabled={publishing}
               className="flex-1 py-4 border border-border rounded-2xl text-sm text-muted-foreground"
             >
               Retour
@@ -277,7 +312,8 @@ export default function CreerPage() {
             <button
               type="button"
               onClick={goNext}
-              className="flex-[2] py-4 bg-primary text-primary-foreground rounded-2xl text-sm font-medium flex items-center justify-center gap-2"
+              disabled={publishing || (studioStep === 1 && !title.trim())}
+              className="flex-[2] py-4 bg-primary text-primary-foreground rounded-2xl text-sm font-medium flex items-center justify-center gap-2 disabled:opacity-40"
             >
               Continuer
               <ArrowRight className="size-4" />
@@ -285,11 +321,11 @@ export default function CreerPage() {
           ) : (
             <button
               type="button"
-              disabled={!publishCheck.canPublish}
-              onClick={handlePublish}
+              disabled={!publishCheck.canPublish || publishing}
+              onClick={() => void handlePublish()}
               className="flex-[2] py-4 bg-primary text-primary-foreground rounded-2xl text-sm font-medium disabled:opacity-40"
             >
-              Publier l’expérience
+              {publishing ? <LoadingButton>Publication…</LoadingButton> : 'Publier l’expérience'}
             </button>
           )}
         </div>

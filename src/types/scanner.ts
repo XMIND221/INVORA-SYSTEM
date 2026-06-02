@@ -22,6 +22,15 @@ export type ScannerValidationStatus = 'validated' | 'denied';
 
 export type ScannerScanResult = 'valid' | 'invalid' | 'duplicate' | 'expired';
 
+export type ScannerDisplayStatus =
+  | 'VALID'
+  | 'USED'
+  | 'EXPIRED'
+  | 'CANCELLED'
+  | 'REFUNDED'
+  | 'BLOCKED'
+  | 'UNKNOWN';
+
 export interface ScannerGate {
   code: ScannerGateCode;
   label: string;
@@ -40,12 +49,16 @@ export interface ScannerValidationDisplay {
   auditId: string;
   result: ScannerScanResult;
   status: ScannerValidationStatus;
+  displayStatus: ScannerDisplayStatus;
   denialReason?: ScannerDenialReason;
   firstName: string;
   lastName: string;
   accessTypeLabel: string;
   eventTitle: string;
   gateCode: ScannerGateCode;
+  gateLabel?: string;
+  passKind?: 'invitation' | 'ticket';
+  validationMs?: number;
 }
 
 export interface ScannerHistoryEntry {
@@ -58,6 +71,7 @@ export interface ScannerHistoryEntry {
   guestName: string;
   accessTypeLabel: string;
   passReference: string;
+  displayStatus?: ScannerDisplayStatus;
 }
 
 export interface ScannerSearchHit {
@@ -98,4 +112,5 @@ export interface ScannerOfflineQueueItem {
   gateCode: ScannerGateCode;
   deviceId?: string;
   queuedAt: string;
+  serverQueueId?: string;
 }

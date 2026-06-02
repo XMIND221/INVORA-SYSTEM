@@ -5,15 +5,26 @@ import { LOVABLE_ROUTES, lovablePartnerWallet } from '@/lib/constants';
 import { PageHeader } from '@/components/lovable/PageHeader';
 import { RoleContextBar } from '@/components/lovable/RoleContextBar';
 import { partnerService } from '@/services/partner.service';
+import { useInvalidatePartner, usePartnerDashboard } from '@/hooks/usePartnerDashboard';
 
 export default function PartnerWithdrawalsPage() {
-  const [amount, setAmount] = useState(84050);
+  const { data } = usePartnerDashboard();
+  const invalidate = useInvalidatePartner();
+  const wallet = data?.wallet ?? { availableFcfa: 0 };
+  const [amount, setAmount] = useState(wallet.availableFcfa);
   const [done, setDone] = useState(false);
-  const wallet = partnerService.walletSummary();
+  const [error, setError] = useState<string | null>(null);
 
-  const handleRequest = () => {
-    const r = partnerService.requestWithdrawal(amount);
-    if (!('error' in r)) setDone(true);
+  const handleRequest = async () => {
+    if (!data?.profile?.id) return;
+    setError(null);
+    try {
+      await partnerService.requestWithdrawal(data.profile.id, amount);
+      setDone(true);
+      invalidate();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'withdrawal_failed');
+    }
   };
 
   return (
@@ -37,7 +48,7 @@ export default function PartnerWithdrawalsPage() {
               <span className="font-serif italic">SEPA.</span>
             </>
           }
-          description="Architecture prête — intégration bancaire Phase ultérieure."
+          description="Demande enregistrée en base — validation manuelle INVORA."
         />
 
         <p className="text-sm text-muted-foreground mb-4">
@@ -53,13 +64,14 @@ export default function PartnerWithdrawalsPage() {
 
         {done && (
           <p className="text-xs text-[color:var(--color-success)] mb-4 p-3 border border-border rounded-lg">
-            Demande enregistrée — statut En attente. Commission figée à la transaction.
+            Demande enregistrée — statut En attente.
           </p>
         )}
+        {error ? <p className="text-xs text-destructive mb-4">{error}</p> : null}
 
         <button
           type="button"
-          onClick={handleRequest}
+          onClick={() => void handleRequest()}
           className="w-full py-4 bg-primary text-primary-foreground rounded-2xl text-sm font-medium"
         >
           Soumettre la demande

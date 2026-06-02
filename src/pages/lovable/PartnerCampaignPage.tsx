@@ -1,30 +1,49 @@
 import { useEffect, useState } from 'react';
 import { Link, Navigate, useParams } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
-import { LOVABLE_ROUTES, lovablePublicTicketing, lovableInvitePublic } from '@/lib/constants';
+import { LOVABLE_ROUTES, lovablePublicTicketing } from '@/lib/constants';
 import { PageHeader } from '@/components/lovable/PageHeader';
 import { RoleContextBar } from '@/components/lovable/RoleContextBar';
 import { MediaKitGrid } from '@/components/lovable/MediaKitGrid';
 import { Stat } from '@/components/lovable/Stat';
 import { distributionLabelForUniverse } from '@/features/engines/partner.engine';
-import { getPartnerMediaKitAssets, buildPromoShareText } from '@/features/engines/media-kit.engine';
+import { buildPromoShareText, getPartnerMediaKitAssets } from '@/features/engines/media-kit.engine';
 import { partnerService } from '@/services/partner.service';
-import type { PartnerCommissionQuote } from '@/types/partner';
+import { usePartnerDashboard } from '@/hooks/usePartnerDashboard';
+import { LoadingPage } from '@/components/lovable/ui-states';
+import type { PartnerCommissionQuote, PartnerMediaAsset } from '@/types/partner';
 
 export default function PartnerCampaignPage() {
   const { campaignId } = useParams<{ campaignId: string }>();
-  const campaign = campaignId ? partnerService.getCampaign(campaignId) : undefined;
+  const { data, isLoading } = usePartnerDashboard();
+  const campaign = data?.campaigns.find((c) => c.id === campaignId);
   const [quote, setQuote] = useState<PartnerCommissionQuote | null>(null);
+  const [dbAssets, setDbAssets] = useState<PartnerMediaAsset[] | null>(null);
 
   useEffect(() => {
     if (!campaign) return;
-    const metric = campaign.universe === 'inviter' ? campaign.conversions : 15000;
-    void partnerService.fetchCommissionQuote(campaign.universe, metric).then(setQuote);
+    const metric =
+      campaign.universe === 'inviter'
+        ? Math.max(campaign.conversions, 1)
+        : Math.max(15000, campaign.ticketsSold > 0 ? 15000 : 5000);
+    void partnerService.fetchCommissionQuote(campaign.universe, metric).then(setQuote).catch(() => {});
+    void partnerService.fetchMediaKit(campaign.eventId).then(setDbAssets).catch(() => {});
   }, [campaign]);
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background">
+        <LoadingPage />
+      </div>
+    );
+  }
 
   if (!campaign) return <Navigate to={LOVABLE_ROUTES.partenaires} replace />;
 
-  const assets = getPartnerMediaKitAssets(campaign.eventTitle, campaign.universe, campaign.shareLink);
+  const assets =
+    dbAssets && dbAssets.length > 0
+      ? dbAssets
+      : getPartnerMediaKitAssets(campaign.eventTitle, campaign.universe, campaign.shareLink);
   const promoText = buildPromoShareText(campaign.eventTitle, campaign.shareLink, campaign.universe);
 
   return (
@@ -60,7 +79,7 @@ export default function PartnerCampaignPage() {
           />
         </div>
 
-        <p className="text-xs text-muted-foreground mb-4 p-3 border border-border rounded-lg">
+        <p className="text-xs text-muted-foreground mb-4 p-3 border border-border rounded-lg break-all">
           Lien traçable : {campaign.shareLink}
         </p>
 
@@ -71,14 +90,10 @@ export default function PartnerCampaignPage() {
         />
 
         <Link
-          to={
-            campaign.universe === 'vendre'
-              ? lovablePublicTicketing(campaign.eventId)
-              : lovableInvitePublic('tok-aminata-obsidian')
-          }
+          to={lovablePublicTicketing(campaign.eventId)}
           className="mt-6 block text-center text-[10px] uppercase tracking-[0.2em] text-muted-foreground"
         >
-          Aperçu destination invité/acheteur
+          Prévisualiser la page publique
         </Link>
       </div>
     </div>

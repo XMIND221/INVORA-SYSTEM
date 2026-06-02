@@ -104,6 +104,14 @@ export function lovableTicketPurchase(eventId: string): string {
   return `/billetterie/${eventId}/acheter`;
 }
 
+export function lovableCheckout(paymentAttemptId: string): string {
+  return `/checkout/${paymentAttemptId}`;
+}
+
+export function lovablePaymentStatus(paymentAttemptId: string): string {
+  return `/paiement/statut/${paymentAttemptId}`;
+}
+
 export function lovableTicketPublic(token: string): string {
   return `/ticket/${token}`;
 }

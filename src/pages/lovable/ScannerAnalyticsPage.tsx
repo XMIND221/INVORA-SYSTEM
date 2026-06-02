@@ -6,12 +6,22 @@ import { Stat } from '@/components/lovable/Stat';
 import { gateLabel } from '@/features/engines/scanner.engine';
 import { SCANNER_ENGINE_COPY } from '@/integration/lovable/product-copy';
 import { LOVABLE_ROUTES } from '@/lib/constants';
-import { scannerService } from '@/services/scanner.service';
+import { useScannerAnalytics, useScannerSession } from '@/hooks/useScannerData';
+import { LoadingPage } from '@/components/lovable/ui-states';
 import type { ScannerGateCode } from '@/types/scanner';
 
 export default function ScannerAnalyticsPage() {
-  const a = scannerService.fieldAnalytics();
-  const session = scannerService.getSession();
+  const { data: session } = useScannerSession();
+  const { data: a, isLoading } = useScannerAnalytics(session?.eventId);
+
+  if (isLoading || !a) {
+    return (
+      <div className="min-h-screen bg-background">
+        <LoadingPage />
+      </div>
+    );
+  }
+
   const gates = Object.entries(a.scansByGate) as [ScannerGateCode, number][];
 
   return (
@@ -26,7 +36,7 @@ export default function ScannerAnalyticsPage() {
           Scanner
         </Link>
         <PageHeader
-          eyebrow={session.eventTitle}
+          eyebrow={session?.eventTitle ?? 'Événement'}
           title="Terrain"
           description={SCANNER_ENGINE_COPY.analyticsDesc}
         />

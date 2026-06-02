@@ -1,4 +1,3 @@
-import { useEffect } from 'react';
 import { Link, Navigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import {
@@ -10,20 +9,30 @@ import { PageHeader } from '@/components/lovable/PageHeader';
 import { RoleContextBar } from '@/components/lovable/RoleContextBar';
 import { TicketingStatusBadge } from '@/components/lovable/TicketingStatusBadge';
 import { useOrganizerEventParam } from '@/hooks/useOrganizerEvent';
+import { useEventTicketTypes } from '@/hooks/useEventTicketTypes';
 import { vendreService } from '@/services/vendre.service';
+import { useQueryClient } from '@tanstack/react-query';
 
 export default function VendrePublishPage() {
   const { eventId, event } = useOrganizerEventParam();
-
-  useEffect(() => {
-    if (eventId) vendreService.initEvent(eventId);
-  }, [eventId]);
+  const { data: catalog } = useEventTicketTypes(eventId);
+  const qc = useQueryClient();
 
   if (!eventId || !event) return <Navigate to={LOVABLE_ROUTES.evenements} replace />;
   if (event.universe !== 'vendre') return <Navigate to={lovableEventVendre(eventId)} replace />;
 
-  const status = vendreService.getTicketingStatus(eventId);
-  const types = vendreService.listTicketTypes(eventId);
+  const status = catalog?.status ?? 'draft';
+  const types = catalog?.types ?? [];
+
+  const publish = async () => {
+    await vendreService.publishTicketing(eventId);
+    void qc.invalidateQueries({ queryKey: ['ticket-types', eventId] });
+  };
+
+  const startSale = async () => {
+    await vendreService.startSale(eventId);
+    void qc.invalidateQueries({ queryKey: ['ticket-types', eventId] });
+  };
 
   return (
     <div className="pb-4">
@@ -41,40 +50,39 @@ export default function VendrePublishPage() {
           eyebrow="Publier"
           title={
             <>
-              Mettre en
+              Billetterie publique,
               <br />
-              <span className="font-serif italic">vente.</span>
+              <span className="font-serif italic">prête.</span>
             </>
           }
-          description="La page publique affiche couverture, billets, prix et CTA achat."
         />
-
-        <div className="flex items-center gap-2 mb-6">
-          <span className="eyebrow">Statut</span>
-          <TicketingStatusBadge status={status} />
-        </div>
-
-        <p className="text-sm text-muted-foreground mb-4">
-          {types.length} type(s) de billet configuré(s). Paiement simulé en Phase 4 (Stripe hors scope).
+        <TicketingStatusBadge status={status} />
+        <p className="text-sm text-muted-foreground mt-4">
+          {types.length} type(s) de billet configuré(s).
         </p>
 
-        <button
-          type="button"
-          onClick={() => {
-            vendreService.publishTicketing(eventId);
-            vendreService.startSale(eventId);
-          }}
-          className="w-full py-4 mb-3 bg-primary text-primary-foreground rounded-2xl text-sm font-medium"
-        >
-          Publier et ouvrir la vente
-        </button>
-
-        <Link
-          to={lovablePublicTicketing(eventId)}
-          className="block text-center py-3 border border-border rounded-xl text-sm text-muted-foreground"
-        >
-          Prévisualiser la billetterie publique
-        </Link>
+        <div className="mt-6 space-y-3">
+          <button
+            type="button"
+            onClick={() => void publish()}
+            className="w-full py-3 border border-border rounded-xl text-sm"
+          >
+            Publier la page
+          </button>
+          <button
+            type="button"
+            onClick={() => void startSale()}
+            className="w-full py-3 bg-primary text-primary-foreground rounded-xl text-sm"
+          >
+            Ouvrir les ventes
+          </button>
+          <Link
+            to={lovablePublicTicketing(eventId)}
+            className="block text-center py-3 text-[10px] uppercase tracking-[0.2em] text-primary"
+          >
+            Voir la billetterie publique
+          </Link>
+        </div>
       </div>
     </div>
   );
