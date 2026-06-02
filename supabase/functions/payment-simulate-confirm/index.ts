@@ -5,10 +5,7 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-/**
- * Phase 10 — initie uniquement le checkout (pas de paid côté client).
- * La validation passe par webhook → process_payment_webhook → confirm.
- */
+/** Dev / staging — simule confirmation provider via webhook engine */
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
@@ -16,13 +13,9 @@ Deno.serve(async (req) => {
 
   try {
     const body = (await req.json()) as {
-      eventId: string;
-      ticketTypeId: string;
-      quantity: number;
-      buyerName: string;
-      buyerPhone: string;
-      buyerEmail?: string;
-      providerId?: string;
+      paymentAttemptId: string;
+      providerId: string;
+      amountFcfa: number;
     };
 
     const supabase = createClient(
@@ -30,19 +23,22 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
     );
 
-    const { data, error } = await supabase.rpc('initiate_vendre_checkout', {
-      p_event_id: body.eventId,
-      p_ticket_type_id: body.ticketTypeId,
-      p_quantity: body.quantity,
-      p_buyer_name: body.buyerName,
-      p_buyer_phone: body.buyerPhone,
-      p_buyer_email: body.buyerEmail ?? null,
-      p_provider_id: body.providerId ?? 'wave',
+    const providerEventId = `sim_${crypto.randomUUID()}`;
+    const providerRef = `ref_${body.paymentAttemptId.slice(0, 8)}`;
+
+    const { data, error } = await supabase.rpc('process_payment_webhook', {
+      p_provider_id: body.providerId,
+      p_provider_event_id: providerEventId,
+      p_event_type: 'payment.succeeded',
+      p_payment_attempt_id: body.paymentAttemptId,
+      p_amount_fcfa: body.amountFcfa,
+      p_provider_ref: providerRef,
+      p_payload: { simulated: true },
     });
 
     if (error) throw error;
 
-    return new Response(JSON.stringify({ checkout: data }), {
+    return new Response(JSON.stringify({ result: data }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   } catch (err) {
