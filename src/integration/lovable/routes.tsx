@@ -1,10 +1,11 @@
 import { lazy, Suspense, type ReactNode } from 'react';
 import type { RouteObject } from 'react-router-dom';
 import { LovableAppLayout } from '@/layouts/LovableAppLayout';
-import { LOVABLE_ROUTES } from '@/lib/constants';
+import { LOVABLE_ROUTES, ROUTES } from '@/lib/constants';
 import { registerLovableManifest } from './registry';
 
 const WelcomePage = lazy(() => import('@/pages/lovable/WelcomePage'));
+const AuthPage = lazy(() => import('@/pages/lovable/AuthPage'));
 const AccueilPage = lazy(() => import('@/pages/lovable/AccueilPage'));
 const EvenementsPage = lazy(() => import('@/pages/lovable/EvenementsPage'));
 const CreerPage = lazy(() => import('@/pages/lovable/CreerPage'));
@@ -72,6 +73,10 @@ export const lovableRoutes: RouteObject[] = [
   {
     path: LOVABLE_ROUTES.root,
     element: wrap(<WelcomePage />),
+  },
+  {
+    path: ROUTES.auth,
+    element: wrap(<AuthPage />),
   },
   {
     path: '/invite/:token',
