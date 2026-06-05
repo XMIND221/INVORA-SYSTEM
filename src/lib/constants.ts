@@ -32,6 +32,7 @@ export const LOVABLE_ROUTES = {
   creer: '/creer',
   acces: '/mes-acces',
   scanner: '/scanner',
+  crm: '/crm',
   parcours: '/parcours',
   partenaires: '/partenaires',
   parametres: '/parametres',

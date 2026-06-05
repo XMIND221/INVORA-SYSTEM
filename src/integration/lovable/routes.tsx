@@ -11,6 +11,8 @@ const AccountDashboardPage = lazy(() => import('@/pages/lovable/AccountDashboard
 const AccueilPage = lazy(() => import('@/pages/lovable/AccueilPage'));
 const EvenementsPage = lazy(() => import('@/pages/lovable/EvenementsPage'));
 const CreerPage = lazy(() => import('@/pages/lovable/CreerPage'));
+const CustomerCrmPage = lazy(() => import('@/pages/lovable/CustomerCrmPage'));
+const CustomerDetailPage = lazy(() => import('@/pages/lovable/CustomerDetailPage'));
 const AccesPage = lazy(() => import('@/pages/lovable/AccesPage'));
 const ScannerPage = lazy(() => import('@/pages/lovable/ScannerPage'));
 const ParcoursPage = lazy(() => import('@/pages/lovable/ParcoursPage'));
@@ -141,6 +143,8 @@ export const lovableRoutes: RouteObject[] = [
       },
       { path: `${LOVABLE_ROUTES.evenements}/:eventId/vendre/rayonner`, element: <VendreRayonnerPage /> },
       { path: LOVABLE_ROUTES.creer, element: <CreerPage /> },
+      { path: LOVABLE_ROUTES.crm, element: <CustomerCrmPage /> },
+      { path: `${LOVABLE_ROUTES.crm}/:customerId`, element: <CustomerDetailPage /> },
       { path: LOVABLE_ROUTES.acces, element: <AccesPage /> },
       { path: `${LOVABLE_ROUTES.acces}/:accessId`, element: <AccessDetailPage /> },
       { path: `${LOVABLE_ROUTES.acces}/historique`, element: <WalletHistoryPage /> },
