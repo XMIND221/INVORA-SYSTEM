@@ -31,12 +31,16 @@ function logEnvDiagnostics() {
   console.info('Vite mode:', diagnostics.mode);
   console.table(diagnostics.files);
   console.table(
-    requiredPublicEnvKeys.map((key) => ({
-      variable: key,
-      value: diagnostics.variables[key]?.value ?? '<missing>',
-      source: diagnostics.variables[key]?.source ?? '<missing>',
-      present: diagnostics.variables[key]?.present ?? false,
-    })),
+    requiredPublicEnvKeys.map((key) => {
+      const variable = diagnostics.variables[key];
+
+      return {
+        variable: key,
+        value: variable.value ?? '<missing>',
+        source: variable.source,
+        present: variable.present,
+      };
+    }),
   );
   console.groupEnd();
 }
@@ -48,7 +52,7 @@ function parseEnv(): AppEnv {
   if (!result.success) {
     const formatted = result.error.flatten().fieldErrors;
     const diagnostics = getEnvDiagnostics();
-    const missing = requiredPublicEnvKeys.filter((key) => !diagnostics.variables[key]?.present);
+    const missing = requiredPublicEnvKeys.filter((key) => !diagnostics.variables[key].present);
     const expectedFiles = diagnostics.files
       .filter((file) => file.loadedInCurrentMode)
       .map((file) => file.file)
