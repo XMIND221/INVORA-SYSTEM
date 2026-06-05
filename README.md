@@ -13,6 +13,21 @@ npm run dev
 
 Ouvrir **http://localhost:8080** (port par défaut, compatible Lovable). Si le port est occupé, Vite affiche un autre port dans le terminal.
 
+## Variables d'environnement
+
+Vite charge les variables publiques préfixées `VITE_` depuis les variables du projet ou les fichiers suivants :
+
+- `npm run dev` : `.env`, `.env.local`, `.env.development`, `.env.development.local`
+- `npm run build` / `npm run preview` : `.env`, `.env.local`, `.env.production`, `.env.production.local`
+
+Variables obligatoires :
+
+- `VITE_SUPABASE_URL`
+- `VITE_SUPABASE_ANON_KEY`
+- `VITE_APP_URL`
+
+En environnement cloud/preview, définissez-les dans la configuration du projet si elles ne sont pas déjà exposées au processus. En local, utilisez de préférence `.env.local` (ignoré par Git).
+
 ## Scripts
 
 | Commande | Description |
