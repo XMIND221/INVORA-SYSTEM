@@ -24,9 +24,12 @@ Variables obligatoires :
 
 - `VITE_SUPABASE_URL`
 - `VITE_SUPABASE_ANON_KEY`
-- `VITE_APP_URL`
 
-En environnement cloud/preview, définissez-les dans la configuration du projet si elles ne sont pas déjà exposées au processus. En local, utilisez de préférence `.env.local` (ignoré par Git).
+Variable optionnelle :
+
+- `VITE_APP_URL` : si absente, l'application utilise `window.location.origin`.
+
+En environnement cloud/preview, définissez les variables obligatoires dans la configuration du projet si elles ne sont pas déjà exposées au processus. En local, utilisez de préférence `.env.local` (ignoré par Git).
 
 ## Scripts
 

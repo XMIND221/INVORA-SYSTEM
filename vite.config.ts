@@ -8,8 +8,10 @@ import react from '@vitejs/plugin-react';
 const REQUIRED_PUBLIC_ENV_KEYS = [
   'VITE_SUPABASE_URL',
   'VITE_SUPABASE_ANON_KEY',
-  'VITE_APP_URL',
 ] as const;
+
+const OPTIONAL_PUBLIC_ENV_KEYS = ['VITE_APP_URL'] as const;
+const PUBLIC_ENV_KEYS = [...REQUIRED_PUBLIC_ENV_KEYS, ...OPTIONAL_PUBLIC_ENV_KEYS] as const;
 
 const STANDARD_ENV_FILES = [
   '.env',
@@ -29,7 +31,7 @@ function createEnvDiagnostics(root: string, mode: string) {
   const checkedFiles = new Set([...STANDARD_ENV_FILES, ...loadedFiles]);
 
   const variables = Object.fromEntries(
-    REQUIRED_PUBLIC_ENV_KEYS.map((key) => [
+    PUBLIC_ENV_KEYS.map((key) => [
       key,
       {
         value: process.env[key] ?? null,
@@ -45,7 +47,7 @@ function createEnvDiagnostics(root: string, mode: string) {
     }
 
     const parsed = parse(fs.readFileSync(filePath));
-    for (const key of REQUIRED_PUBLIC_ENV_KEYS) {
+    for (const key of PUBLIC_ENV_KEYS) {
       if (process.env[key] === undefined && Object.prototype.hasOwnProperty.call(parsed, key)) {
         variables[key] = {
           value: parsed[key] ?? null,

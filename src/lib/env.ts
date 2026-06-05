@@ -4,24 +4,47 @@ import { envDiagnostics } from 'virtual:env-diagnostics';
 const requiredPublicEnvKeys = [
   'VITE_SUPABASE_URL',
   'VITE_SUPABASE_ANON_KEY',
-  'VITE_APP_URL',
 ] as const;
+
+const optionalPublicEnvKeys = ['VITE_APP_URL'] as const;
+const publicEnvKeys = [...requiredPublicEnvKeys, ...optionalPublicEnvKeys] as const;
 
 const envSchema = z.object({
   VITE_SUPABASE_URL: z.string().url(),
   VITE_SUPABASE_ANON_KEY: z.string().min(1),
   VITE_APP_ENV: z.enum(['development', 'staging', 'production']).default('development'),
-  VITE_APP_URL: z.string().url(),
+  VITE_APP_URL: z.string().url().optional(),
   VITE_ENABLE_REALTIME: z
     .string()
     .optional()
     .transform((v) => v !== 'false'),
 });
 
-export type AppEnv = z.infer<typeof envSchema>;
+type ParsedAppEnv = z.infer<typeof envSchema>;
+export type AppEnv = Omit<ParsedAppEnv, 'VITE_APP_URL'> & {
+  VITE_APP_URL: string;
+};
 
 function getEnvDiagnostics() {
   return envDiagnostics;
+}
+
+function getDefaultAppUrl() {
+  return window.location.origin;
+}
+
+function getDisplayedVariable(key: (typeof publicEnvKeys)[number]) {
+  const variable = getEnvDiagnostics().variables[key];
+
+  if (key === 'VITE_APP_URL' && !variable.present) {
+    return {
+      value: getDefaultAppUrl(),
+      source: 'window.location.origin (default)',
+      present: true,
+    };
+  }
+
+  return variable;
 }
 
 function logEnvDiagnostics() {
@@ -31,8 +54,8 @@ function logEnvDiagnostics() {
   console.info('Vite mode:', diagnostics.mode);
   console.table(diagnostics.files);
   console.table(
-    requiredPublicEnvKeys.map((key) => {
-      const variable = diagnostics.variables[key];
+    publicEnvKeys.map((key) => {
+      const variable = getDisplayedVariable(key);
 
       return {
         variable: key,
@@ -67,7 +90,12 @@ function parseEnv(): AppEnv {
       ].join(' '),
     );
   }
-  return result.data;
+  const parsed = result.data;
+
+  return {
+    ...parsed,
+    VITE_APP_URL: parsed.VITE_APP_URL ?? getDefaultAppUrl(),
+  };
 }
 
 export const env = parseEnv();
