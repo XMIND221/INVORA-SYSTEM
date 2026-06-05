@@ -98,7 +98,7 @@ export default function ExperienceAnalyticsPage() {
             <Stat label="Acceptations" value={String(analytics.invitationsAccepted)} />
             <Stat label="Billets" value={String(analytics.ticketsSold)} />
             <Stat label="Scans" value={String(analytics.scansDone)} />
-            <Stat label="Presence" value={`${analytics.attendanceRate}%`} />
+            <Stat label="Presence" value={`${String(analytics.attendanceRate)}%`} />
           </div>
         )}
       </div>
