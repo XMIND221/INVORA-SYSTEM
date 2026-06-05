@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from 'react';
+import { useEffect, useState, type SyntheticEvent } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { signInWithEmail, signUpWithEmail } from '@/supabase/auth';
 import { LOVABLE_ROUTES } from '@/lib/constants';
@@ -42,11 +42,11 @@ export default function AuthPage() {
 
   useEffect(() => {
     if (!isLoading && isAuthenticated) {
-      navigate(redirectTo, { replace: true });
+      void navigate(redirectTo, { replace: true });
     }
   }, [isAuthenticated, isLoading, navigate, redirectTo]);
 
-  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: SyntheticEvent<HTMLFormElement>) => {
     event.preventDefault();
     setSubmitting(true);
     setError(null);
@@ -56,7 +56,7 @@ export default function AuthPage() {
       if (mode === 'sign-in') {
         const { error: signInError } = await signInWithEmail(email, password);
         if (signInError) throw signInError;
-        navigate(redirectTo, { replace: true });
+        await navigate(redirectTo, { replace: true });
         return;
       }
 
@@ -92,7 +92,9 @@ export default function AuthPage() {
           <div className="mt-6 grid grid-cols-2 rounded-full border border-border bg-surface-2 p-1 text-sm">
             <button
               type="button"
-              onClick={() => setMode('sign-in')}
+              onClick={() => {
+                setMode('sign-in');
+              }}
               className={`rounded-full px-4 py-2 transition ${
                 mode === 'sign-in' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground'
               }`}
@@ -101,7 +103,9 @@ export default function AuthPage() {
             </button>
             <button
               type="button"
-              onClick={() => setMode('sign-up')}
+              onClick={() => {
+                setMode('sign-up');
+              }}
               className={`rounded-full px-4 py-2 transition ${
                 mode === 'sign-up' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground'
               }`}
@@ -117,7 +121,9 @@ export default function AuthPage() {
                 <input
                   type="text"
                   value={fullName}
-                  onChange={(event) => setFullName(event.target.value)}
+                  onChange={(event) => {
+                    setFullName(event.target.value);
+                  }}
                   className="mt-2 w-full rounded-2xl border border-border bg-background px-4 py-3 outline-none focus:border-border-strong"
                   autoComplete="name"
                 />
@@ -129,7 +135,9 @@ export default function AuthPage() {
               <input
                 type="email"
                 value={email}
-                onChange={(event) => setEmail(event.target.value)}
+                onChange={(event) => {
+                  setEmail(event.target.value);
+                }}
                 className="mt-2 w-full rounded-2xl border border-border bg-background px-4 py-3 outline-none focus:border-border-strong"
                 autoComplete="email"
                 required
@@ -141,7 +149,9 @@ export default function AuthPage() {
               <input
                 type="password"
                 value={password}
-                onChange={(event) => setPassword(event.target.value)}
+                onChange={(event) => {
+                  setPassword(event.target.value);
+                }}
                 className="mt-2 w-full rounded-2xl border border-border bg-background px-4 py-3 outline-none focus:border-border-strong"
                 autoComplete={mode === 'sign-in' ? 'current-password' : 'new-password'}
                 minLength={8}
@@ -154,7 +164,9 @@ export default function AuthPage() {
                 <span className="text-muted-foreground">Role principal</span>
                 <select
                   value={primaryRole}
-                  onChange={(event) => setPrimaryRole(event.target.value as UserRole)}
+                  onChange={(event) => {
+                    setPrimaryRole(event.target.value as UserRole);
+                  }}
                   className="mt-2 w-full rounded-2xl border border-border bg-background px-4 py-3 outline-none focus:border-border-strong"
                 >
                   {roleOptions.map((role) => (
