@@ -1,13 +1,18 @@
 import { lazy, Suspense, type ReactNode } from 'react';
 import type { RouteObject } from 'react-router-dom';
+import { LegacyRouteRedirects } from '@/components/lovable/LegacyRouteRedirects';
 import { LovableAppLayout } from '@/layouts/LovableAppLayout';
-import { LOVABLE_ROUTES } from '@/lib/constants';
+import { LOVABLE_ROUTES, ROUTES } from '@/lib/constants';
 import { registerLovableManifest } from './registry';
 
 const WelcomePage = lazy(() => import('@/pages/lovable/WelcomePage'));
+const AuthPage = lazy(() => import('@/pages/lovable/AuthPage'));
+const AccountDashboardPage = lazy(() => import('@/pages/lovable/AccountDashboardPage'));
 const AccueilPage = lazy(() => import('@/pages/lovable/AccueilPage'));
 const EvenementsPage = lazy(() => import('@/pages/lovable/EvenementsPage'));
 const CreerPage = lazy(() => import('@/pages/lovable/CreerPage'));
+const CustomerCrmPage = lazy(() => import('@/pages/lovable/CustomerCrmPage'));
+const CustomerDetailPage = lazy(() => import('@/pages/lovable/CustomerDetailPage'));
 const AccesPage = lazy(() => import('@/pages/lovable/AccesPage'));
 const ScannerPage = lazy(() => import('@/pages/lovable/ScannerPage'));
 const ParcoursPage = lazy(() => import('@/pages/lovable/ParcoursPage'));
@@ -15,6 +20,7 @@ const PartenairesPage = lazy(() => import('@/pages/lovable/PartenairesPage'));
 const ParametresPage = lazy(() => import('@/pages/lovable/ParametresPage'));
 const EventHubPage = lazy(() => import('@/pages/lovable/EventHubPage'));
 const EventAnalyticsPage = lazy(() => import('@/pages/lovable/EventAnalyticsPage'));
+const ExperienceAnalyticsPage = lazy(() => import('@/pages/lovable/ExperienceAnalyticsPage'));
 const EventRayonnerPage = lazy(() => import('@/pages/lovable/EventRayonnerPage'));
 const EventMediasPage = lazy(() => import('@/pages/lovable/EventMediasPage'));
 const InviterHubPage = lazy(() => import('@/pages/lovable/InviterHubPage'));
@@ -74,6 +80,22 @@ export const lovableRoutes: RouteObject[] = [
     element: wrap(<WelcomePage />),
   },
   {
+    path: ROUTES.auth,
+    element: wrap(<AuthPage />),
+  },
+  {
+    path: ROUTES.dashboard,
+    element: wrap(<AccountDashboardPage />),
+  },
+  {
+    path: '/u/inviter',
+    element: <LegacyRouteRedirects to={LOVABLE_ROUTES.accueil} preserveSearch />,
+  },
+  {
+    path: '/u/vendre',
+    element: <LegacyRouteRedirects to={LOVABLE_ROUTES.accueil} preserveSearch />,
+  },
+  {
     path: '/invite/:token',
     element: wrap(<InvitePublicPage />),
   },
@@ -90,6 +112,10 @@ export const lovableRoutes: RouteObject[] = [
       { path: LOVABLE_ROUTES.evenements, element: <EvenementsPage /> },
       { path: `${LOVABLE_ROUTES.evenements}/:eventId`, element: <EventHubPage /> },
       { path: `${LOVABLE_ROUTES.evenements}/:eventId/analytics`, element: <EventAnalyticsPage /> },
+      {
+        path: `${LOVABLE_ROUTES.evenements}/:eventId/experience-analytics`,
+        element: <ExperienceAnalyticsPage />,
+      },
       { path: `${LOVABLE_ROUTES.evenements}/:eventId/rayonner`, element: <EventRayonnerPage /> },
       { path: `${LOVABLE_ROUTES.evenements}/:eventId/medias`, element: <EventMediasPage /> },
       { path: `${LOVABLE_ROUTES.evenements}/:eventId/design`, element: <DesignStudioPage /> },
@@ -117,6 +143,8 @@ export const lovableRoutes: RouteObject[] = [
       },
       { path: `${LOVABLE_ROUTES.evenements}/:eventId/vendre/rayonner`, element: <VendreRayonnerPage /> },
       { path: LOVABLE_ROUTES.creer, element: <CreerPage /> },
+      { path: LOVABLE_ROUTES.crm, element: <CustomerCrmPage /> },
+      { path: `${LOVABLE_ROUTES.crm}/:customerId`, element: <CustomerDetailPage /> },
       { path: LOVABLE_ROUTES.acces, element: <AccesPage /> },
       { path: `${LOVABLE_ROUTES.acces}/:accessId`, element: <AccessDetailPage /> },
       { path: `${LOVABLE_ROUTES.acces}/historique`, element: <WalletHistoryPage /> },

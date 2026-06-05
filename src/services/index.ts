@@ -15,3 +15,4 @@ export { designService, buildDesignInputFromEvent } from './design.service';
 export { financeService, fetchInviterPricingQuote, fetchVendrePricingQuote } from './finance.service';
 export * as paymentService from './payment.service';
 export * as checkoutService from './checkout.service';
+export * as customerCrmService from './customer-crm.service';

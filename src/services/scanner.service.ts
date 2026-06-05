@@ -180,7 +180,7 @@ export async function fetchScannerHistory(eventId: string, limit = 100): Promise
   )('get_scanner_history', { p_event_id: eventId, p_limit: limit });
 
   if (error) throw error;
-  return (Array.isArray(data) ? data : []) as ScannerHistoryEntry[];
+  return (Array.isArray(data) ? data : []) as unknown as ScannerHistoryEntry[];
 }
 
 export async function fetchScannerFieldAnalytics(eventId: string): Promise<ScannerFieldAnalytics> {
