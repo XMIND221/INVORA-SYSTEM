@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { envDiagnostics } from 'virtual:env-diagnostics';
 
 const requiredPublicEnvKeys = [
   'VITE_SUPABASE_URL',
@@ -20,24 +21,7 @@ const envSchema = z.object({
 export type AppEnv = z.infer<typeof envSchema>;
 
 function getEnvDiagnostics() {
-  if (typeof __APP_ENV_DIAGNOSTICS__ !== 'undefined') {
-    return __APP_ENV_DIAGNOSTICS__;
-  }
-
-  return {
-    mode: import.meta.env.MODE,
-    files: [],
-    variables: Object.fromEntries(
-      requiredPublicEnvKeys.map((key) => [
-        key,
-        {
-          value: import.meta.env[key] ?? null,
-          source: import.meta.env[key] ? 'import.meta.env' : '<missing>',
-          present: Boolean(import.meta.env[key]),
-        },
-      ]),
-    ),
-  };
+  return envDiagnostics;
 }
 
 function logEnvDiagnostics() {

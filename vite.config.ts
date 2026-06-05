@@ -2,7 +2,7 @@ import path from 'node:path';
 import fs from 'node:fs';
 import { parse } from 'dotenv';
 import tailwindcss from '@tailwindcss/vite';
-import { defineConfig } from 'vite';
+import { defineConfig, type Plugin } from 'vite';
 import react from '@vitejs/plugin-react';
 
 const REQUIRED_PUBLIC_ENV_KEYS = [
@@ -75,11 +75,32 @@ function createEnvDiagnostics(root: string, mode: string) {
   };
 }
 
+function envDiagnosticsPlugin(root: string, mode: string): Plugin {
+  const virtualModuleId = 'virtual:env-diagnostics';
+  const resolvedVirtualModuleId = `\0${virtualModuleId}`;
+
+  return {
+    name: 'invora-env-diagnostics',
+    resolveId(id) {
+      if (id === virtualModuleId) {
+        return resolvedVirtualModuleId;
+      }
+      return undefined;
+    },
+    load(id) {
+      if (id !== resolvedVirtualModuleId) {
+        return undefined;
+      }
+
+      return `export const envDiagnostics = ${JSON.stringify(
+        createEnvDiagnostics(root, mode),
+      )};`;
+    },
+  };
+}
+
 export default defineConfig(({ mode }) => ({
-  define: {
-    __APP_ENV_DIAGNOSTICS__: JSON.stringify(createEnvDiagnostics(__dirname, mode)),
-  },
-  plugins: [react(), tailwindcss()],
+  plugins: [envDiagnosticsPlugin(__dirname, mode), react(), tailwindcss()],
   server: {
     port: 8080,
     strictPort: false,
